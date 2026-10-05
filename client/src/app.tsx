@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-function GesCoach() {
+function App() {
   const [status, setStatus] = useState("comprobando...");
 
   useEffect(() => {
@@ -18,4 +18,4 @@ function GesCoach() {
   );
 }
 
-export default GesCoach;
+export default App;
