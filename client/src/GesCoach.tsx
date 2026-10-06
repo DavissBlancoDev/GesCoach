@@ -12,7 +12,7 @@ function GesCoach() {
 
   return (
     <div>
-      <h1>GesCoach</h1>
+      <h1>GesCoach · Gestión de equipos</h1>
       <p>Estado de la API: {status}</p>
     </div>
   );

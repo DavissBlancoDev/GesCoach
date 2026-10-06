@@ -1,8 +1,9 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { connectDB } from "./config/db";
 import mongoose from "mongoose";
+import { connectDB } from "./config/db";
+import authRouter from "./routes/auth";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -19,6 +20,8 @@ app.get("/api/health", (_req, res) => {
     database: dbConectada ? "conectada" : "desconectada",
   });
 });
+
+app.use("/api/auth", authRouter);
 
 connectDB()
   .then(() => {
