@@ -1,21 +1,15 @@
-import { useEffect, useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import DashboardPage from "./pages/DashboardPage.tsx";
 
 function GesCoach() {
-  const [status, setStatus] = useState("comprobando...");
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status))
-      .catch(() => setStatus("sin conexión"));
-  }, []);
-
   return (
-    <div>
-      <h1>GesCoach · Gestión de equipos</h1>
-      <h1 className="text-3xl font-bold text-green-700">GesCoach</h1>
-      <p>Estado de la API: {status}</p>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/registro" element={<RegisterPage />} />
+      <Route path="/" element={<DashboardPage />} />
+    </Routes>
   );
 }
 
