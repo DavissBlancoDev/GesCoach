@@ -31,6 +31,8 @@ const seasonSchema = new Schema(
     division: { type: String, required: true, trim: true, maxlength: 120 }, // Texto libre, porque cambia según la federación y el grupo
     matchDuration: { type: Number, required: true, min: 10, max: 120 }, // Duración total del partido, en minutos
     isCurrent: { type: Boolean, default: true },
+    // Se rellena al finalizar la temporada; mientras esté vacío, sigue abierta
+    closedAt: { type: Date },
   },
   { timestamps: true }
 );

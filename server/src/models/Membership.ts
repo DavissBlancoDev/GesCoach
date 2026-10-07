@@ -9,6 +9,8 @@ export const ROLES = [
   "medical", // médico
 ] as const;
 
+export type Role = (typeof ROLES)[number];
+
 /**
  * Relaciona un usuario con un equipo y le asigna un rol.
  * El rol vive aquí y no en User, porque la misma persona puede tener
