@@ -12,6 +12,8 @@ export const CATEGORIES = [
   "infantil",
   "cadete",
   "juvenil",
+  "senior",
+  "veteranos"
 ] as const;
 
 /**
