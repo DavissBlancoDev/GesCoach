@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { connectDB } from "./config/db";
 import authRouter from "./routes/auth";
 import cookieParser from "cookie-parser";
+import teamsRouter from "./routes/teams";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -24,6 +25,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/teams", teamsRouter);
 
 connectDB()
   .then(() => {
