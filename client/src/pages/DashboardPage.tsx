@@ -1,7 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { logout } from "../api/auth";
 import { useSession } from "../hooks/useSession";
-import { useMyTeams } from "../hooks/useMyTeams";
+import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import {
   CATEGORY_LABELS,
   MODALITY_LABELS,
@@ -11,24 +9,12 @@ import {
 
 function DashboardPage() {
   const { data: user } = useSession();
-  const { data: teams } = useMyTeams();
-  const queryClient = useQueryClient();
-
-  // De momento trabajamos con el primer equipo del usuario
-  const current = teams?.[0];
-
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSuccess: () => {
-      queryClient.setQueryData(["session"], null);
-      // Quitamos los equipos de la caché para que no los vea otra persona
-      // que inicie sesión después en el mismo navegador
-      queryClient.removeQueries({ queryKey: ["teams"] });
-    },
-  });
+  // Equipo con el que se trabaja (de momento, el primero del usuario).
+  // Cuando haya varios equipos, el selector estará en useCurrentTeam.
+  const { current } = useCurrentTeam();
 
   return (
-    <div className="p-6">
+    <main className="mx-auto max-w-2xl p-4">
       <h1 className="text-2xl font-bold">Hola, {user?.name}</h1>
 
       {current?.team && current.currentSeason && (
@@ -43,14 +29,7 @@ function DashboardPage() {
           <p className="mt-2 text-sm">Tu rol: {ROLE_LABELS[current.role]}</p>
         </section>
       )}
-
-      <button
-        className="mt-4 rounded bg-gray-800 px-4 py-2 text-white"
-        onClick={() => logoutMutation.mutate()}
-      >
-        Cerrar sesión
-      </button>
-    </div>
+    </main>
   );
 }
 
