@@ -10,3 +10,6 @@ export const canSeeContract = (role: Role) => role === "head_coach";
 /** Contacto de tutores: cuerpo técnico y delegado (por urgencias en partido). */
 export const canSeeGuardians = (role: Role) =>
   role === "head_coach" || role === "assistant_coach" || role === "delegate";
+
+/** Estadísticas: todos los roles menos el médico. */
+export const canSeeStats = (role: Role) => role !== "medical";

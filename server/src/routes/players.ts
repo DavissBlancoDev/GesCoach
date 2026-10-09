@@ -8,7 +8,8 @@ import { PlayerSeason, PLAYER_STATUSES } from "../models/PlayerSeason";
 import { Season, CATEGORIES } from "../models/Season";
 import type { Role } from "../models/Membership";
 import { POSITIONS } from "../lib/positions";
-import { canEditSquad, canSeeContract, canSeeGuardians } from "../lib/permissions";
+import { canEditSquad, canSeeContract, canSeeGuardians, canSeeStats } from "../lib/permissions";
+import { emptyStats, getSeasonStats, type PlayerStats } from "../lib/playerStats";
 import { yearsUntil } from "../utils/dates";
 
 // mergeParams permite leer :teamId, que viene del router padre en index.ts
@@ -88,7 +89,7 @@ type SquadEntryDoc = InstanceType<typeof PlayerSeason>;
  * al cliente. Los datos sensibles (contrato, sueldo, tutores) solo se
  * incluyen si el rol del usuario tiene permiso para verlos.
  */
-function toSquadItem(player: PlayerDoc, entry: SquadEntryDoc, role: Role) {
+function toSquadItem(player: PlayerDoc, entry: SquadEntryDoc, role: Role, stats: PlayerStats) {
   return {
     id: player.id,
     squadId: entry.id,
@@ -103,6 +104,7 @@ function toSquadItem(player: PlayerDoc, entry: SquadEntryDoc, role: Role) {
     mainPosition: entry.mainPosition,
     secondaryPositions: entry.secondaryPositions,
     status: entry.status,
+    stats: canSeeStats(role) ? stats : undefined, // Solo se envían a los roles que pueden verlas
     guardians: canSeeGuardians(role)
       ? player.guardians.map((g) => ({
           name: g.name,
@@ -145,10 +147,18 @@ router.get<TeamParams>("/", async (req, res) => {
   const entries = await PlayerSeason.find({ season: season._id });
   const players = await Player.find({ _id: { $in: entries.map((e) => e.player) } });
 
+    // Estadísticas de toda la plantilla en una sola consulta
+  const statsByPlayer = await getSeasonStats(
+    season._id,
+    players.map((p) => p.id)
+  );
+
   const items = entries
     .flatMap((entry) => {
       const player = players.find((p) => p.id === entry.player.toString());
-      return player ? [toSquadItem(player, entry, role)] : [];
+      return player
+        ? [toSquadItem(player, entry, role, statsByPlayer.get(player.id) ?? emptyStats())]
+        : [];
     })
     .sort((a, b) => a.surname.localeCompare(b.surname, "es"));
 
@@ -207,7 +217,7 @@ router.post<TeamParams>("/", async (req, res) => {
       return { player, entry };
     });
 
-    return res.status(201).json(toSquadItem(player, entry, role));
+      return res.status(201).json(toSquadItem(player, entry, role, emptyStats()));
   } catch (err) {
     if (isDuplicateKeyError(err)) {
       return res.status(409).json({ error: "Ese dorsal ya está en uso en esta temporada" });

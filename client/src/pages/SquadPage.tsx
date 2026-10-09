@@ -2,18 +2,26 @@ import { useState } from "react";
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { usePlayers } from "../hooks/usePlayers";
 import { CATEGORY_LABELS } from "../lib/teams";
-import { PLAYER_STATUS_COLORS, PLAYER_STATUS_LABELS, canEditSquad } from "../lib/players";
+import { canEditSquad, canSeeStats } from "../lib/players";
 import PositionBadge from "../components/PositionBadge";
 import PlayerForm from "../components/PlayerForm";
+import SquadTable from "../components/SquadTable";
+import StatusIcon from "../components/StatusIcon";
+import Flag from "../components/Flag";
+
+// Dos formas de ver la plantilla: tarjetas (lista) o tabla de estadísticas
+type View = "list" | "stats";
 
 /**
- * Plantilla de la temporada actual: lista de jugadores con su dorsal,
- * edad, ficha, posición principal y estado, y formulario para añadir.
+ * Plantilla de la temporada actual. Se puede ver como lista de tarjetas o
+ * como tabla con las estadísticas de cada jugador, y desde aquí se añaden
+ * jugadores nuevos.
  */
 function SquadPage() {
   const { current } = useCurrentTeam();
   const { data: players, isPending, isError } = usePlayers(current?.team?._id);
   const [showForm, setShowForm] = useState(false);
+  const [view, setView] = useState<View>("list");
 
   // RequireTeam garantiza que hay equipo; esto cubre el instante de carga
   if (!current || !current.team || !current.currentSeason) {
@@ -21,6 +29,13 @@ function SquadPage() {
   }
 
   const canEdit = canEditSquad(current.role);
+  const showStats = canSeeStats(current.role);
+
+  // Estilo de cada botón del selector de vista
+  const viewButtonClass = (active: boolean) =>
+    `rounded px-3 py-1 text-sm ${
+      active ? "bg-green-700 text-white" : "border border-gray-300 text-gray-700"
+    }`;
 
   return (
     <main className="mx-auto max-w-2xl p-4">
@@ -54,6 +69,26 @@ function SquadPage() {
         </div>
       )}
 
+      {/* Selector de vista: solo tiene sentido si hay jugadores */}
+      {players && players.length > 0 && (
+        <div className="mb-3 flex gap-2">
+          <button
+            aria-pressed={view === "list"}
+            onClick={() => setView("list")}
+            className={viewButtonClass(view === "list")}
+          >
+            Lista
+          </button>
+          <button
+            aria-pressed={view === "stats"}
+            onClick={() => setView("stats")}
+            className={viewButtonClass(view === "stats")}
+          >
+            Estadísticas
+          </button>
+        </div>
+      )}
+
       {isPending && <p>Cargando plantilla...</p>}
       {isError && <p className="text-red-600">No se ha podido cargar la plantilla.</p>}
 
@@ -63,7 +98,13 @@ function SquadPage() {
         </p>
       )}
 
-      {players && players.length > 0 && (
+      {/* Vista de estadísticas: tabla con desplazamiento horizontal */}
+      {players && players.length > 0 && view === "stats" && (
+        <SquadTable players={players} showStats={showStats} />
+      )}
+
+      {/* Vista de lista: una tarjeta por jugador */}
+      {players && players.length > 0 && view === "list" && (
         <ul className="space-y-2">
           {players.map((player) => (
             <li
@@ -82,20 +123,13 @@ function SquadPage() {
                     <span className="text-gray-500"> · {player.nickname}</span>
                   )}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="flex items-center gap-1.5 text-sm text-gray-600">
+                  <Flag code={player.nationality} />
                   {player.age} años · {CATEGORY_LABELS[player.licenseCategory]}
                 </p>
               </div>
 
-              {/* Solo se destaca el estado cuando no es "disponible" */}
-              {player.status !== "available" && (
-                <span
-                  className={`rounded px-2 py-1 text-xs ${PLAYER_STATUS_COLORS[player.status]}`}
-                >
-                  {PLAYER_STATUS_LABELS[player.status]}
-                </span>
-              )}
-
+              <StatusIcon status={player.status} />
               <PositionBadge position={player.mainPosition} />
             </li>
           ))}

@@ -15,6 +15,7 @@ import {
 import { PLAYER_STATUS_LABELS, canEditContract } from "../lib/players";
 import FormField from "./FormField";
 import FormSelect from "./FormSelect";
+import { COUNTRY_OPTIONS } from "../lib/countries";
 
 interface PlayerFormProps {
   teamId: string;
@@ -199,15 +200,12 @@ function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) 
           error={firstError("birthDate")}
           required
         />
-        <FormField
+        <FormSelect
           id="nationality"
-          label="Nacionalidad (código, opcional)"
-          placeholder="ES"
+          label="Nacionalidad (opcional)"
           value={form.nationality}
-          onChange={(e) => update("nationality", e.target.value.toUpperCase())}
-          error={firstError("nationality")}
-          minLength={2}
-          maxLength={2}
+          onChange={(e) => update("nationality", e.target.value)}
+          options={COUNTRY_OPTIONS}
         />
       </div>
 

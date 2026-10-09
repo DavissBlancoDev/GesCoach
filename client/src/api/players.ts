@@ -36,7 +36,8 @@ export interface SquadPlayer {
   secondaryPositions: Position[];
   status: PlayerStatus;
   guardians?: Guardian[];
-  contract?: Contract & { yearsLeft: number };
+  contract?: Contract & { yearsLeft: number }
+  stats?: PlayerStats; // solo llega si el rol puede ver estadísticas;
 }
 
 // Datos que envía el formulario al añadir un jugador
@@ -65,3 +66,18 @@ export const createPlayer = (teamId: string, data: CreatePlayerData) =>
     method: "POST",
     body: JSON.stringify(data),
   });
+
+  // Estadísticas de un jugador en la temporada. Se calculan en el servidor
+// a partir de los partidos. Llegan vacías de momento.
+export interface PlayerStats {
+  calledUp: number; // partidos convocado
+  played: number; // partidos jugados
+  started: number; // partidos como titular
+  minutes: number; // minutos jugados
+  goals: number;
+  assists: number;
+  yellowCards: number;
+  redCards: number;
+  cleanSheets: number; // porterías a cero (solo porteros)
+  goalsConceded: number; // goles encajados (solo porteros)
+}

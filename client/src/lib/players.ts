@@ -23,3 +23,6 @@ export const canEditSquad = (role: Role) =>
   role === "head_coach" || role === "assistant_coach";
 
 export const canEditContract = (role: Role) => role === "head_coach";
+
+// Solo para mostrar u ocultar columnas. El servidor es quien decide si envía las estadísticas.
+export const canSeeStats = (role: Role) => role !== "medical";
