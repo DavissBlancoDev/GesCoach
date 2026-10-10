@@ -7,6 +7,7 @@ import SquadPage from "./pages/SquadPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RequireTeam from "./components/RequireTeam";
 import AppLayout from "./components/AppLayout";
+import PlayerDetailPage from "./pages/PlayerDetailPage";
 
 function GesCoach() {
   return (
@@ -22,6 +23,7 @@ function GesCoach() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/plantilla" element={<SquadPage />} />
+            <Route path="/plantilla/:playerId" element={<PlayerDetailPage />} />
           </Route>
         </Route>
       </Route>

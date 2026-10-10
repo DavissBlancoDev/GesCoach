@@ -81,3 +81,7 @@ export interface PlayerStats {
   cleanSheets: number; // porterías a cero (solo porteros)
   goalsConceded: number; // goles encajados (solo porteros)
 }
+
+/** Quita un jugador de la plantilla de la temporada actual. */
+export const deletePlayer = (teamId: string, playerId: string) =>
+  api<void>(`/teams/${teamId}/players/${playerId}`, { method: "DELETE" });

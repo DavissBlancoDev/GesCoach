@@ -21,6 +21,7 @@ router.use(requireAuth, requireTeamMember);
 // Parámetros de la URL que llegan desde el router padre (index.ts).
 // Sin este tipo, TypeScript no sabe que existe req.params.teamId.
 type TeamParams = { teamId: string };
+type PlayerParams = TeamParams & { playerId: string };
 
 /** Fecha en formato AAAA-MM-DD, convertida a Date. */
 const dateString = z
@@ -86,8 +87,9 @@ type SquadEntryDoc = InstanceType<typeof PlayerSeason>;
 
 /**
  * Convierte un jugador y su ficha de temporada en el objeto que se envía
- * al cliente. Los datos sensibles (contrato, sueldo, tutores) solo se
- * incluyen si el rol del usuario tiene permiso para verlos.
+ * al cliente. Los datos sensibles (contrato, sueldo, tutores) y las
+ * estadísticas solo se incluyen si el rol del usuario tiene permiso para
+ * verlos.
  */
 function toSquadItem(player: PlayerDoc, entry: SquadEntryDoc, role: Role, stats: PlayerStats) {
   return {
@@ -104,7 +106,8 @@ function toSquadItem(player: PlayerDoc, entry: SquadEntryDoc, role: Role, stats:
     mainPosition: entry.mainPosition,
     secondaryPositions: entry.secondaryPositions,
     status: entry.status,
-    stats: canSeeStats(role) ? stats : undefined, // Solo se envían a los roles que pueden verlas
+    // Solo se envían a los roles que pueden verlas
+    stats: canSeeStats(role) ? stats : undefined,
     guardians: canSeeGuardians(role)
       ? player.guardians.map((g) => ({
           name: g.name,
@@ -147,7 +150,7 @@ router.get<TeamParams>("/", async (req, res) => {
   const entries = await PlayerSeason.find({ season: season._id });
   const players = await Player.find({ _id: { $in: entries.map((e) => e.player) } });
 
-    // Estadísticas de toda la plantilla en una sola consulta
+  // Estadísticas de toda la plantilla en una sola consulta
   const statsByPlayer = await getSeasonStats(
     season._id,
     players.map((p) => p.id)
@@ -217,13 +220,65 @@ router.post<TeamParams>("/", async (req, res) => {
       return { player, entry };
     });
 
-      return res.status(201).json(toSquadItem(player, entry, role, emptyStats()));
+    // Un jugador recién creado todavía no tiene partidos
+    return res.status(201).json(toSquadItem(player, entry, role, emptyStats()));
   } catch (err) {
     if (isDuplicateKeyError(err)) {
       return res.status(409).json({ error: "Ese dorsal ya está en uso en esta temporada" });
     }
     throw err;
   }
+});
+
+/**
+ * DELETE /api/teams/:teamId/players/:playerId
+ * Quita al jugador de la plantilla de la temporada actual. Si no ha estado
+ * en ninguna otra temporada, borra también al jugador (la persona), para
+ * no dejar datos personales sin uso.
+ *
+ * IMPORTANTE: cuando existan partidos y actas, esta ruta tendrá que
+ * rechazar el borrado de jugadores con participación registrada (409) y
+ * sugerir marcarlos como inactivos, para no perder las estadísticas de la
+ * temporada.
+ */
+router.delete<PlayerParams>("/:playerId", async (req, res) => {
+  const role = res.locals.role as Role;
+  if (!canEditSquad(role)) {
+    return res.status(403).json({ error: "No tienes permiso para editar la plantilla" });
+  }
+
+  const { teamId, playerId } = req.params;
+  if (!mongoose.isValidObjectId(playerId)) {
+    return res.status(404).json({ error: "Jugador no encontrado" });
+  }
+
+  const season = await Season.findOne({ team: teamId, isCurrent: true });
+  if (!season) {
+    return res.status(404).json({ error: "El equipo no tiene temporada activa" });
+  }
+
+  // Filtramos también por equipo: un jugador de otro equipo responde 404
+  const player = await Player.findOne({ _id: playerId, team: teamId });
+  if (!player) {
+    return res.status(404).json({ error: "Jugador no encontrado" });
+  }
+
+  const entry = await PlayerSeason.findOne({ player: player._id, season: season._id });
+  if (!entry) {
+    return res.status(404).json({ error: "El jugador no está en la plantilla actual" });
+  }
+
+  // Los dos borrados van en una transacción para que no quede nada a medias
+  await mongoose.connection.transaction(async (session) => {
+    await PlayerSeason.deleteOne({ _id: entry._id }).session(session);
+
+    const remaining = await PlayerSeason.countDocuments({ player: player._id }).session(session);
+    if (remaining === 0) {
+      await Player.deleteOne({ _id: player._id }).session(session);
+    }
+  });
+
+  return res.status(204).send();
 });
 
 export default router;
