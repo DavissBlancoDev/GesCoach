@@ -70,7 +70,7 @@ function SquadTable({ players, showStats }: SquadTableProps) {
                       <Link
                         to={`/plantilla/${player.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="max-w-[6.5rem] truncate font-medium hover:underline sm:max-w-none"
+                        className="max-w-26 truncate font-medium hover:underline sm:max-w-none"
                       >
                         {displayName}
                       </Link>

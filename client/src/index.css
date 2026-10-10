@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+/* Cursor de mano en todo lo clicable (Tailwind 4 ya no lo pone en los botones).
+   Los botones desactivados conservan el cursor normal. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
