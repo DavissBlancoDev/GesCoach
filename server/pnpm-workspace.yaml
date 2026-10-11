@@ -1,2 +1,8 @@
 allowBuilds:
   esbuild: true
+
+minumumReleaseAge: 1440 #24 horas
+
+minumumReleaseAgeExclude:
+  - react
+  - react-dom
