@@ -20,10 +20,12 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [x] 🧙 Asistente de creación de equipo y primera temporada
 - [x] 🧩 Modelo de datos de equipo, temporada y membresías con roles
 - [x] 👥 API de plantilla: jugadores con ficha por temporada, posiciones, dorsal opcional, tutores y contrato opcionales
+- [x] 📋 Pantalla de plantilla: tabla con posiciones abreviadas, banderas, estado y estadísticas por jugador
+- [x] 🪪 Ficha del jugador y eliminación de la plantilla
 
 ### 🔨 En curso
 
-- [ ] 📋 Pantalla de plantilla (lista, posiciones abreviadas, formulario de jugadores)
+- [ ] ✏️ Editar jugador y cambio rápido de estado (lesionado, sancionado...)
 
 ### 🔮 Previsto
 
@@ -31,7 +33,8 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [ ] 🏆 Competiciones, equipos rivales, calendario y clasificación calculada
 - [ ] 📄 Importación de jornadas desde los PDF de la federación, con vista previa antes de guardar
 - [ ] 📝 Partidos: convocatoria (con límite según la competición), alineación por formaciones y acta
-- [ ] 🏃 Entrenos con objetivos y control de asistencia
+- [ ] 🏃 Entrenos con objetivos y control de asistencia (asiste, ausencia justificada o injustificada) y porcentajes por jugador
+- [ ] 🗒️ Notas del entrenador sobre cada jugador
 - [ ] 📅 Calendario mensual
 - [ ] 📊 Estadísticas de jugadores y de equipo
 - [ ] 🏠 Dashboard: próximo partido, próximo entreno, disponibilidad y riesgo de sanción
@@ -89,6 +92,7 @@ Detalle de las herramientas y librerías del proyecto, y para qué se usa cada u
 
 | Herramienta | Para qué se usa |
 |---|---|
+| pnpm | Gestor de paquetes. Espera antes de instalar versiones recién publicadas y bloquea por defecto los scripts de instalación |
 | ESLint | Análisis estático del código |
 | Git y GitHub | Control de versiones y alojamiento del repositorio |
 | VS Code | Editor |
@@ -107,7 +111,7 @@ Detalle de las herramientas y librerías del proyecto, y para qué se usa cada u
 gescoach/
 ├── client/   # Aplicación React
 ├── server/   # API REST con Express
-└── docs/     # Decisiones de diseño (pendiente)
+└── docs/     # Modelo de datos y roles y permisos
 ```
 
 ## 🚀 Puesta en marcha
@@ -115,6 +119,7 @@ gescoach/
 ### 📋 Requisitos
 
 - Node.js (versión LTS)
+- [pnpm](https://pnpm.io/installation) (el proyecto lo usa en lugar de npm)
 - Una base de datos MongoDB. Se recomienda un clúster gratuito de MongoDB Atlas: las transacciones que usa la API necesitan un conjunto de réplicas, y Atlas ya lo es.
 
 ### 📦 Instalación
@@ -123,8 +128,8 @@ gescoach/
 git clone https://github.com/TU-USUARIO/gescoach.git
 cd gescoach
 
-cd server && npm ci
-cd ../client && npm ci
+cd server && pnpm install --frozen-lockfile
+cd ../client && pnpm install --frozen-lockfile
 ```
 
 ### 🔧 Variables de entorno
@@ -152,11 +157,11 @@ En dos terminales:
 ```bash
 # Terminal 1: API (http://localhost:3000)
 cd server
-npm run dev
+pnpm dev
 
 # Terminal 2: cliente (http://localhost:5173)
 cd client
-npm run dev
+pnpm dev
 ```
 
 Vite redirige las peticiones de `/api` al servidor, así que el cliente usa rutas relativas y no hay problemas de CORS en desarrollo.
@@ -176,8 +181,11 @@ Vite redirige las peticiones de `/api` al servidor, así que el cliente usa ruta
 | GET | `/api/teams/mine` | Equipos del usuario, con su rol y su temporada actual |
 | GET | `/api/teams/:teamId/players` | Plantilla de la temporada actual |
 | POST | `/api/teams/:teamId/players` | Añade un jugador a la plantilla |
+| DELETE | `/api/teams/:teamId/players/:playerId` | Quita un jugador de la plantilla de la temporada actual |
 
 ## 🧠 Decisiones de diseño
+
+Más detalle en [Modelo de datos](./docs/modelo-de-datos.md) y [Roles y permisos](./docs/roles-y-permisos.md).
 
 - 🏷️ **Equipo y temporada separados.** El equipo es una entidad continua; categoría, división, modalidad y duración del partido pertenecen a la temporada, porque cambian cada año.
 - 🧍 **Jugador como persona y como ficha de temporada.** Los datos estables (nombre, fecha de nacimiento, tutores) viven en el jugador; ficha, dorsal, posiciones y estado viven en su paso por cada temporada. Así se conserva el histórico sin duplicar datos.
@@ -189,6 +197,7 @@ Vite redirige las peticiones de `/api` al servidor, así que el cliente usa ruta
 
 ## 🔒 Seguridad y privacidad
 
+- 📦 Las dependencias se instalan con pnpm y `pnpm-lock.yaml` versionado. No se instala ninguna versión publicada hace menos de 24 horas (`minimumReleaseAge: 1440` en `pnpm-workspace.yaml`), para dar tiempo a detectar paquetes comprometidos, y los scripts de instalación solo se ejecutan si se aprueban de forma explícita. Se usa bcryptjs en lugar de bcrypt para no depender de scripts nativos.
 - 🔐 Las contraseñas se guardan con hash y nunca se devuelven en las respuestas.
 - 🍪 El token de sesión va en una cookie `httpOnly`, inaccesible para JavaScript.
 - 🙈 Los datos sensibles (contrato, sueldo, contacto de tutores) se filtran **en el servidor** según el rol, no en el cliente.
