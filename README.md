@@ -22,10 +22,11 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [x] 👥 API de plantilla: jugadores con ficha por temporada, posiciones, dorsal opcional, tutores y contrato opcionales
 - [x] 📋 Pantalla de plantilla: tabla con posiciones abreviadas, banderas, estado y estadísticas por jugador
 - [x] 🪪 Ficha del jugador y eliminación de la plantilla
+- [x] ✏️ Editar jugador y cambio rápido de estado (lesionado, sancionado...)
 
 ### 🔨 En curso
 
-- [ ] ✏️ Editar jugador y cambio rápido de estado (lesionado, sancionado...)
+- [ ] 🗒️ Notas del entrenador y tarjeta de asistencia en la ficha del jugador
 
 ### 🔮 Previsto
 
@@ -34,7 +35,8 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [ ] 📄 Importación de jornadas desde los PDF de la federación, con vista previa antes de guardar
 - [ ] 📝 Partidos: convocatoria (con límite según la competición), alineación por formaciones y acta
 - [ ] 🏃 Entrenos con objetivos y control de asistencia (asiste, ausencia justificada o injustificada) y porcentajes por jugador
-- [ ] 🗒️ Notas del entrenador sobre cada jugador
+- [ ] 📆 Selector de fechas más cómodo para elegir el año (fecha de nacimiento)
+- [ ] 🔤 Letra del equipo en la ficha del jugador (por ejemplo, Infantil C)
 - [ ] 📅 Calendario mensual
 - [ ] 📊 Estadísticas de jugadores y de equipo
 - [ ] 🏠 Dashboard: próximo partido, próximo entreno, disponibilidad y riesgo de sanción
@@ -181,6 +183,8 @@ Vite redirige las peticiones de `/api` al servidor, así que el cliente usa ruta
 | GET | `/api/teams/mine` | Equipos del usuario, con su rol y su temporada actual |
 | GET | `/api/teams/:teamId/players` | Plantilla de la temporada actual |
 | POST | `/api/teams/:teamId/players` | Añade un jugador a la plantilla |
+| PUT | `/api/teams/:teamId/players/:playerId` | Actualiza los datos de un jugador (los campos opcionales que no se envían se borran) |
+| PATCH | `/api/teams/:teamId/players/:playerId/status` | Cambia solo el estado de un jugador |
 | DELETE | `/api/teams/:teamId/players/:playerId` | Quita un jugador de la plantilla de la temporada actual |
 
 ## 🧠 Decisiones de diseño
