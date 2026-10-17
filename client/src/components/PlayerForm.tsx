@@ -1,9 +1,16 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createPlayer, type CreatePlayerData, type PlayerStatus } from "../api/players";
+import {
+  createPlayer,
+  updatePlayer,
+  type CreatePlayerData,
+  type PlayerStatus,
+  type SquadPlayer,
+} from "../api/players";
 import type { Category, Role } from "../api/teams";
 import { getFieldErrors } from "../api/client";
 import { CATEGORY_LABELS } from "../lib/teams";
+import { COUNTRY_OPTIONS } from "../lib/countries";
 import {
   GROUP_LABELS,
   POSITIONS,
@@ -15,13 +22,14 @@ import {
 import { PLAYER_STATUS_LABELS, canEditContract } from "../lib/players";
 import FormField from "./FormField";
 import FormSelect from "./FormSelect";
-import { COUNTRY_OPTIONS } from "../lib/countries";
 
 interface PlayerFormProps {
   teamId: string;
   role: Role;
   // Categoría de la temporada: es la ficha que se propone por defecto
   defaultCategory: Category;
+  // Si se indica, el formulario edita a ese jugador; si no, crea uno nuevo
+  player?: SquadPlayer;
   onDone: () => void;
 }
 
@@ -39,47 +47,88 @@ interface FormState {
   status: PlayerStatus;
 }
 
+// Un tutor tal como se edita en el formulario (todo como texto)
+interface GuardianForm {
+  name: string;
+  relationship: string;
+  phone: string;
+  email: string;
+}
+
+const MAX_GUARDIANS = 4;
+
+type SalaryPeriod = "monthly" | "yearly";
+
+// El contrato tal como se edita en el formulario (todo como texto)
+interface ContractForm {
+  startDate: string;
+  endDate: string;
+  salary: string;
+  salaryPeriod: SalaryPeriod;
+}
+
+const emptyGuardian = (): GuardianForm => ({
+  name: "",
+  relationship: "",
+  phone: "",
+  email: "",
+});
+
+// El servidor envía las fechas como "2012-03-20T00:00:00.000Z" y el campo de
+// fecha del navegador espera solo "2012-03-20"
+const toDateInput = (iso?: string) => (iso ? iso.slice(0, 10) : "");
+
 // Convierte un objeto de etiquetas en las opciones de un desplegable
 const toOptions = (labels: Record<string, string>) =>
   Object.entries(labels).map(([value, label]) => ({ value, label }));
 
-/** Formulario para añadir un jugador a la plantilla de la temporada actual. */
-function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) {
-  const [form, setForm] = useState<FormState>({
-    name: "",
-    surname: "",
-    nickname: "",
-    birthDate: "",
-    nationality: "",
-    licenseCategory: defaultCategory,
-    jerseyNumber: "",
-    mainPosition: "",
-    status: "available",
-  });
-  const [secondary, setSecondary] = useState<Position[]>([]);
+/**
+ * Formulario de jugador. Sin la propiedad "player" crea un jugador nuevo en
+ * la plantilla de la temporada actual; con ella, edita los datos de ese
+ * jugador, que aparecen ya rellenos.
+ */
+function PlayerForm({ teamId, role, defaultCategory, player, onDone }: PlayerFormProps) {
+  const isEditing = Boolean(player);
 
-  // Bloques opcionales: solo se envían si se activan
-  const [withGuardian, setWithGuardian] = useState(false);
-  const [guardian, setGuardian] = useState({
-    name: "",
-    relationship: "",
-    phone: "",
-    email: "",
+  const [form, setForm] = useState<FormState>({
+    name: player?.name ?? "",
+    surname: player?.surname ?? "",
+    nickname: player?.nickname ?? "",
+    birthDate: toDateInput(player?.birthDate),
+    nationality: player?.nationality ?? "",
+    licenseCategory: player?.licenseCategory ?? defaultCategory,
+    jerseyNumber: String(player?.jerseyNumber ?? ""),
+    mainPosition: player?.mainPosition ?? "",
+    status: player?.status ?? "available",
   });
-  const [withContract, setWithContract] = useState(false);
-  const [contract, setContract] = useState({
-    startDate: "",
-    endDate: "",
-    salary: "",
-    salaryPeriod: "monthly",
+  const [secondary, setSecondary] = useState<Position[]>(player?.secondaryPositions ?? []);
+
+  // Tutores: una lista, de 0 a 4. Al editar, se cargan los que ya tiene.
+  const [guardians, setGuardians] = useState<GuardianForm[]>(
+    (player?.guardians ?? []).map((g) => ({
+      name: g.name,
+      relationship: g.relationship,
+      phone: g.phone ?? "",
+      email: g.email ?? "",
+    }))
+  );
+
+  // Contrato: bloque opcional, solo para quien puede gestionarlo
+  const [withContract, setWithContract] = useState(Boolean(player?.contract));
+  const [contract, setContract] = useState<ContractForm>({
+    startDate: toDateInput(player?.contract?.startDate),
+    endDate: toDateInput(player?.contract?.endDate),
+    salary: String(player?.contract?.salary ?? ""),
+    salaryPeriod: player?.contract?.salaryPeriod ?? "monthly",
   });
 
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (data: CreatePlayerData) => createPlayer(teamId, data),
+    mutationFn: (data: CreatePlayerData) =>
+      player ? updatePlayer(teamId, player.id, data) : createPlayer(teamId, data),
     onSuccess: async () => {
-      // Recargamos la plantilla para que aparezca el jugador nuevo
+      // Recargamos la plantilla para que se vean los cambios
       await queryClient.invalidateQueries({ queryKey: ["players", teamId] });
       onDone();
     },
@@ -108,6 +157,14 @@ function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) 
     });
   }
 
+  // Gestión de la lista de tutores
+  const addGuardian = () => setGuardians((prev) => [...prev, emptyGuardian()]);
+  const removeGuardian = (index: number) =>
+    setGuardians((prev) => prev.filter((_, i) => i !== index));
+  function updateGuardian(index: number, field: keyof GuardianForm, value: string) {
+    setGuardians((prev) => prev.map((g, i) => (i === index ? { ...g, [field]: value } : g)));
+  }
+
   /** Construye los datos que espera el servidor y los envía. */
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -118,25 +175,24 @@ function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) 
     const data: CreatePlayerData = {
       name: form.name,
       surname: form.surname,
-      // Los campos opcionales vacíos no se envían
+      // Los campos opcionales vacíos no se envían. Al editar, el servidor
+      // borra los que no llegan, así que así se pueden vaciar.
       nickname: form.nickname.trim() || undefined,
       birthDate: form.birthDate,
-      nationality: form.nationality.trim() || undefined,
+      nationality: form.nationality || undefined,
       licenseCategory: form.licenseCategory,
       jerseyNumber: form.jerseyNumber === "" ? undefined : Number(form.jerseyNumber),
       mainPosition: form.mainPosition,
       secondaryPositions: secondary,
       status: form.status,
-      guardians: withGuardian
-        ? [
-            {
-              name: guardian.name,
-              relationship: guardian.relationship,
-              phone: guardian.phone.trim() || undefined,
-              email: guardian.email.trim() || undefined,
-            },
-          ]
-        : [],
+      guardians: guardians.map((g) => ({
+        name: g.name,
+        relationship: g.relationship,
+        phone: g.phone.trim() || undefined,
+        email: g.email.trim() || undefined,
+      })),
+      // Quien no puede gestionar contratos no envía nada: el servidor
+      // conserva el que ya hubiera
       contract:
         withContract && canEditContract(role)
           ? {
@@ -144,9 +200,7 @@ function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) 
               endDate: contract.endDate,
               salary: hasSalary ? Number(contract.salary) : undefined,
               // El periodo solo tiene sentido si hay sueldo
-              salaryPeriod: hasSalary
-                ? (contract.salaryPeriod as "monthly" | "yearly")
-                : undefined,
+              salaryPeriod: hasSalary ? contract.salaryPeriod : undefined,
             }
           : undefined,
     };
@@ -159,7 +213,7 @@ function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) 
       onSubmit={handleSubmit}
       className="space-y-4 rounded border border-gray-200 p-4"
     >
-      <h2 className="text-lg font-semibold">Añadir jugador</h2>
+      <h2 className="text-lg font-semibold">{isEditing ? "Editar jugador" : "Añadir jugador"}</h2>
 
       {/* Datos de la persona */}
       <div className="grid grid-cols-2 gap-4">
@@ -206,6 +260,8 @@ function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) 
           value={form.nationality}
           onChange={(e) => update("nationality", e.target.value)}
           options={COUNTRY_OPTIONS}
+          emptyLabel="Sin nacionalidad"
+          error={firstError("nationality")}
         />
       </div>
 
@@ -263,9 +319,7 @@ function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) 
 
       {/* Posiciones secundarias: botones que se activan y desactivan */}
       <div>
-        <p className="text-sm font-medium text-gray-700">
-          Posiciones secundarias (hasta 4)
-        </p>
+        <p className="text-sm font-medium text-gray-700">Posiciones secundarias (hasta 4)</p>
         <div className="mt-1 flex flex-wrap gap-2">
           {POSITIONS.filter((p) => p !== form.mainPosition).map((p) => {
             const active = secondary.includes(p);
@@ -300,71 +354,78 @@ function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) 
         required
       />
 
-      {/* Bloque opcional: contacto de un tutor */}
+      {/* Tutores: de 0 a 4 */}
       <div className="space-y-3 rounded bg-gray-50 p-3">
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input
-            type="checkbox"
-            checked={withGuardian}
-            onChange={(e) => setWithGuardian(e.target.checked)}
-          />
-          Añadir contacto de un tutor
-        </label>
-        {withGuardian && (
-          <>
+        <p className="text-sm font-medium">Tutores</p>
+        {guardians.map((g, i) => (
+          <div key={i} className="space-y-3 rounded border border-gray-200 bg-white p-3">
             <div className="grid grid-cols-2 gap-4">
               <FormField
-                id="guardianName"
+                id={`guardianName${i}`}
                 label="Nombre del tutor"
-                value={guardian.name}
-                onChange={(e) => setGuardian({ ...guardian, name: e.target.value })}
+                value={g.name}
+                onChange={(e) => updateGuardian(i, "name", e.target.value)}
                 maxLength={100}
                 required
               />
               <FormField
-                id="guardianRelationship"
+                id={`guardianRelationship${i}`}
                 label="Relación"
                 placeholder="madre, padre, tutor..."
-                value={guardian.relationship}
-                onChange={(e) => setGuardian({ ...guardian, relationship: e.target.value })}
+                value={g.relationship}
+                onChange={(e) => updateGuardian(i, "relationship", e.target.value)}
                 maxLength={40}
                 required
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <FormField
-                id="guardianPhone"
+                id={`guardianPhone${i}`}
                 label="Teléfono (opcional)"
                 type="tel"
-                value={guardian.phone}
-                onChange={(e) => setGuardian({ ...guardian, phone: e.target.value })}
+                value={g.phone}
+                onChange={(e) => updateGuardian(i, "phone", e.target.value)}
                 maxLength={20}
               />
               <FormField
-                id="guardianEmail"
+                id={`guardianEmail${i}`}
                 label="Email (opcional)"
                 type="email"
-                value={guardian.email}
-                onChange={(e) => setGuardian({ ...guardian, email: e.target.value })}
+                value={g.email}
+                onChange={(e) => updateGuardian(i, "email", e.target.value)}
               />
             </div>
-            {firstError("guardians") && (
-              <p className="text-sm text-red-600">{firstError("guardians")}</p>
-            )}
-          </>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => removeGuardian(i)}
+                className="text-sm text-red-700 underline"
+              >
+                Quitar tutor
+              </button>
+            </div>
+          </div>
+        ))}
+        {guardians.length < MAX_GUARDIANS && (
+          <button type="button" onClick={addGuardian} className="text-sm text-green-700 underline">
+            + Añadir tutor
+          </button>
+        )}
+        {firstError("guardians") && (
+          <p className="text-sm text-red-600">{firstError("guardians")}</p>
         )}
       </div>
 
       {/* Bloque opcional: contrato. Solo lo gestiona el entrenador principal */}
       {canEditContract(role) && (
         <div className="space-y-3 rounded bg-gray-50 p-3">
-          <label className="flex items-center gap-2 text-sm font-medium">
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
             <input
               type="checkbox"
               checked={withContract}
               onChange={(e) => setWithContract(e.target.checked)}
             />
-            Añadir contrato
+            Contrato
           </label>
           {withContract && (
             <>
@@ -398,7 +459,9 @@ function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) 
                   id="salaryPeriod"
                   label="Periodo"
                   value={contract.salaryPeriod}
-                  onChange={(e) => setContract({ ...contract, salaryPeriod: e.target.value })}
+                  onChange={(e) =>
+                    setContract({ ...contract, salaryPeriod: e.target.value as SalaryPeriod })
+                  }
                   options={[
                     { value: "monthly", label: "Mensual" },
                     { value: "yearly", label: "Anual" },
@@ -428,7 +491,7 @@ function PlayerForm({ teamId, role, defaultCategory, onDone }: PlayerFormProps) 
           disabled={mutation.isPending}
           className="flex-1 rounded bg-green-700 px-4 py-2 text-white disabled:opacity-50"
         >
-          {mutation.isPending ? "Guardando..." : "Guardar jugador"}
+          {mutation.isPending ? "Guardando..." : isEditing ? "Guardar cambios" : "Guardar jugador"}
         </button>
       </div>
     </form>

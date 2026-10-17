@@ -8,7 +8,13 @@ import { PlayerSeason, PLAYER_STATUSES } from "../models/PlayerSeason";
 import { Season, CATEGORIES } from "../models/Season";
 import type { Role } from "../models/Membership";
 import { POSITIONS } from "../lib/positions";
-import { canEditSquad, canSeeContract, canSeeGuardians, canSeeStats } from "../lib/permissions";
+import {
+  canEditSquad,
+  canSeeContract,
+  canSeeGuardians,
+  canSeeStats,
+  canSetStatus,
+} from "../lib/permissions";
 import { emptyStats, getSeasonStats, type PlayerStats } from "../lib/playerStats";
 import { yearsUntil } from "../utils/dates";
 
@@ -56,8 +62,8 @@ const contractSchema = z
     path: ["endDate"],
   });
 
-// Datos para añadir un jugador a la plantilla de la temporada actual
-const createPlayerSchema = z
+// Datos de un jugador: sirven para añadirlo y para actualizarlo
+const playerSchema = z
   .object({
     // Datos de la persona
     name: z.string().trim().min(1).max(60),
@@ -180,12 +186,17 @@ router.post<TeamParams>("/", async (req, res) => {
     return res.status(403).json({ error: "No tienes permiso para editar la plantilla" });
   }
 
-  const parsed = createPlayerSchema.safeParse(req.body);
+  const parsed = playerSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
       error: "Datos no válidos",
       details: parsed.error.flatten().fieldErrors,
     });
+  }
+
+  // El contrato y el sueldo solo los gestiona quien puede verlos
+  if (parsed.data.contract && !canSeeContract(role)) {
+    return res.status(403).json({ error: "Solo el entrenador principal puede gestionar el contrato" });
   }
 
   const season = await Season.findOne({ team: req.params.teamId, isCurrent: true });
@@ -228,6 +239,143 @@ router.post<TeamParams>("/", async (req, res) => {
     }
     throw err;
   }
+});
+
+// Cambio rápido de estado
+const statusSchema = z.object({ status: z.enum(PLAYER_STATUSES) });
+
+/**
+ * PUT /api/teams/:teamId/players/:playerId
+ * Sustituye los datos editables del jugador (los de la persona y los de su
+ * ficha de la temporada actual) por los recibidos. Los campos opcionales
+ * que no se envían se borran, y así se puede, por ejemplo, quitar la
+ * nacionalidad o el dorsal.
+ *
+ * El contrato solo lo gestiona quien puede verlo (el entrenador principal).
+ * Para el resto de roles se conserva el que ya hay, aunque no se envíe.
+ * Todo se guarda en una transacción: o se actualiza todo o nada.
+ */
+router.put<PlayerParams>("/:playerId", async (req, res) => {
+  const role = res.locals.role as Role;
+  if (!canEditSquad(role)) {
+    return res.status(403).json({ error: "No tienes permiso para editar la plantilla" });
+  }
+
+  const parsed = playerSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: "Datos no válidos",
+      details: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  const { teamId, playerId } = req.params;
+  if (!mongoose.isValidObjectId(playerId)) {
+    return res.status(404).json({ error: "Jugador no encontrado" });
+  }
+
+  const canTouchContract = canSeeContract(role);
+  if (parsed.data.contract && !canTouchContract) {
+    return res.status(403).json({ error: "Solo el entrenador principal puede gestionar el contrato" });
+  }
+
+  const season = await Season.findOne({ team: teamId, isCurrent: true });
+  if (!season) {
+    return res.status(404).json({ error: "El equipo no tiene temporada activa" });
+  }
+
+  const d = parsed.data;
+
+  try {
+    const result = await mongoose.connection.transaction(async (session) => {
+      // Filtramos también por equipo: un jugador de otro equipo responde 404
+      const player = await Player.findOne({ _id: playerId, team: teamId }).session(session);
+      if (!player) return null;
+
+      const entry = await PlayerSeason.findOne({
+        player: player._id,
+        season: season._id,
+      }).session(session);
+      if (!entry) return null;
+
+      // Datos de la persona. Asignar undefined borra el campo en la base de datos.
+      player.name = d.name;
+      player.surname = d.surname;
+      player.nickname = d.nickname || undefined;
+      player.birthDate = d.birthDate;
+      player.nationality = d.nationality || undefined;
+      player.guardians = d.guardians;
+      if (canTouchContract) player.contract = d.contract;
+
+      // Datos de la ficha de la temporada
+      entry.licenseCategory = d.licenseCategory;
+      entry.jerseyNumber = d.jerseyNumber;
+      entry.mainPosition = d.mainPosition;
+      entry.secondaryPositions = d.secondaryPositions;
+      entry.status = d.status;
+
+      await player.save({ session });
+      await entry.save({ session });
+      return { player, entry };
+    });
+
+    if (!result) {
+      return res.status(404).json({ error: "Jugador no encontrado" });
+    }
+
+    const statsByPlayer = await getSeasonStats(season._id, [result.player.id]);
+    const stats = statsByPlayer.get(result.player.id) ?? emptyStats();
+    return res.json(toSquadItem(result.player, result.entry, role, stats));
+  } catch (err) {
+    if (isDuplicateKeyError(err)) {
+      return res.status(409).json({ error: "Ese dorsal ya está en uso en esta temporada" });
+    }
+    throw err;
+  }
+});
+
+/**
+ * PATCH /api/teams/:teamId/players/:playerId/status
+ * Cambia solo el estado del jugador (disponible, lesionado, sancionado o
+ * inactivo). Tiene su propio permiso: el médico puede marcar lesiones
+ * aunque no pueda editar la plantilla (ver canSetStatus).
+ */
+router.patch<PlayerParams>("/:playerId/status", async (req, res) => {
+  const role = res.locals.role as Role;
+
+  const parsed = statusSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Estado no válido" });
+  }
+
+  const { teamId, playerId } = req.params;
+  if (!mongoose.isValidObjectId(playerId)) {
+    return res.status(404).json({ error: "Jugador no encontrado" });
+  }
+
+  const season = await Season.findOne({ team: teamId, isCurrent: true });
+  if (!season) {
+    return res.status(404).json({ error: "El equipo no tiene temporada activa" });
+  }
+
+  const player = await Player.findOne({ _id: playerId, team: teamId });
+  if (!player) {
+    return res.status(404).json({ error: "Jugador no encontrado" });
+  }
+
+  const entry = await PlayerSeason.findOne({ player: player._id, season: season._id });
+  if (!entry) {
+    return res.status(404).json({ error: "El jugador no está en la plantilla actual" });
+  }
+
+  if (!canSetStatus(role, entry.status, parsed.data.status)) {
+    return res.status(403).json({ error: "Tu rol no puede hacer ese cambio de estado" });
+  }
+
+  entry.status = parsed.data.status;
+  await entry.save();
+
+  return res.json({ id: player.id, status: entry.status });
 });
 
 /**

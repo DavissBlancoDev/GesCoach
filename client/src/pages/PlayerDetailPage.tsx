@@ -1,7 +1,12 @@
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deletePlayer, type SquadPlayer } from "../api/players";
+import {
+  deletePlayer,
+  updatePlayerStatus,
+  type PlayerStatus,
+  type SquadPlayer,
+} from "../api/players";
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { usePlayers } from "../hooks/usePlayers";
 import { CATEGORY_LABELS } from "../lib/teams";
@@ -11,12 +16,16 @@ import { STAT_COLUMNS, isGoalkeeper } from "../lib/stats";
 import {
   PLAYER_STATUS_COLORS,
   PLAYER_STATUS_LABELS,
+  PLAYER_STATUS_LIST,
   canEditContract,
   canEditSquad,
   canSeeStats,
+  canSetStatus,
 } from "../lib/players";
 import Flag from "../components/Flag";
+import PlayerForm from "../components/PlayerForm";
 import PositionBadge from "../components/PositionBadge";
+import StatusIcon from "../components/StatusIcon";
 
 /**
  * Fecha en texto largo ("20 de marzo de 2012"). Se usa UTC porque las
@@ -45,9 +54,10 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /**
- * Ficha de un jugador: cabecera con dorsal y nombre futbolístico, tarjeta
- * de información, estadísticas e historial de partidos. Los datos se sacan
- * de la plantilla ya cargada, así que no hace falta otra petición.
+ * Ficha de un jugador: cabecera con dorsal y nombre futbolístico, cambio
+ * rápido de estado, tarjeta de información, estadísticas e historial de
+ * partidos. Los datos se sacan de la plantilla ya cargada, así que no hace
+ * falta otra petición. Con "Editar" se abre el formulario en el mismo sitio.
  */
 function PlayerDetailPage() {
   const { playerId } = useParams();
@@ -57,6 +67,7 @@ function PlayerDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: () => deletePlayer(teamId as string, playerId as string),
@@ -69,6 +80,17 @@ function PlayerDetailPage() {
       navigate("/plantilla", { replace: true });
       // Y refrescamos en segundo plano para confirmar con el servidor
       void queryClient.invalidateQueries({ queryKey: ["players", teamId] });
+    },
+  });
+
+  // Cambio rápido de estado: actualiza solo ese dato en la caché
+  const statusMutation = useMutation({
+    mutationFn: (status: PlayerStatus) =>
+      updatePlayerStatus(teamId as string, playerId as string, status),
+    onSuccess: ({ status }) => {
+      queryClient.setQueryData<SquadPlayer[]>(["players", teamId], (old) =>
+        old?.map((p) => (p.id === playerId ? { ...p, status } : p))
+      );
     },
   });
 
@@ -92,6 +114,11 @@ function PlayerDetailPage() {
   const displayName = player.nickname || player.name;
   const goalkeeper = isGoalkeeper(player);
   const salary = player.contract?.salary;
+
+  // Estados a los que este rol puede cambiar al jugador desde su estado actual
+  const allowedStatuses = PLAYER_STATUS_LIST.filter(
+    (status) => status !== player.status && canSetStatus(role, player.status, status)
+  );
 
   return (
     <main className="mx-auto max-w-5xl p-4">
@@ -127,16 +154,36 @@ function PlayerDetailPage() {
               </>
             )}
           </div>
+
+          {/* Cambio rápido de estado, sin abrir el formulario completo */}
+          {allowedStatuses.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-gray-500">Cambiar estado:</span>
+              {allowedStatuses.map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  disabled={statusMutation.isPending}
+                  onClick={() => statusMutation.mutate(status)}
+                  className="flex items-center gap-1 rounded border border-gray-300 px-2 py-1 text-xs disabled:opacity-50"
+                >
+                  <StatusIcon status={status} />
+                  {PLAYER_STATUS_LABELS[status]}
+                </button>
+              ))}
+            </div>
+          )}
+          {statusMutation.isError && (
+            <p className="mt-1 text-xs text-red-600">{statusMutation.error.message}</p>
+          )}
         </div>
 
-        {canEdit && (
+        {canEdit && !editing && (
           <div className="flex gap-2">
-            {/* La edición llega en el siguiente paso */}
             <button
               type="button"
-              disabled
-              title="Disponible próximamente"
-              className="rounded border border-gray-300 px-4 py-2 text-sm disabled:opacity-50"
+              onClick={() => setEditing(true)}
+              className="rounded border border-gray-300 px-4 py-2 text-sm"
             >
               Editar
             </button>
@@ -152,7 +199,7 @@ function PlayerDetailPage() {
       </header>
 
       {/* Confirmación antes de eliminar: la acción no se puede deshacer */}
-      {confirmingDelete && (
+      {confirmingDelete && !editing && (
         <div role="alertdialog" className="mt-4 rounded border border-red-200 bg-red-50 p-4">
           <p className="font-medium">¿Eliminar a {displayName} de la plantilla?</p>
           <p className="mt-1 text-sm text-gray-700">
@@ -182,118 +229,132 @@ function PlayerDetailPage() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {/* Columna izquierda: información adicional */}
-        <section className="rounded border border-gray-200 p-4">
-          <h2 className="mb-3 text-lg font-semibold">Información</h2>
-          <dl className="space-y-3 text-sm">
-            <InfoRow label="Fecha de nacimiento">{formatDate(player.birthDate)}</InfoRow>
-            <InfoRow label="Ficha">{CATEGORY_LABELS[player.licenseCategory]}</InfoRow>
-            <InfoRow label="Posición principal">
-              <span className="flex items-center gap-2">
-                <PositionBadge position={player.mainPosition} />
-                {POSITION_LABELS[player.mainPosition]}
-              </span>
-            </InfoRow>
-            <InfoRow label="Posiciones secundarias">
-              {player.secondaryPositions.length === 0 ? (
-                "Ninguna"
-              ) : (
-                <span className="flex flex-wrap gap-x-4 gap-y-1">
-                  {player.secondaryPositions.map((p) => (
-                    <span key={p} className="flex items-center gap-1">
-                      <PositionBadge position={p} />
-                      {POSITION_LABELS[p]}
-                    </span>
-                  ))}
-                </span>
-              )}
-            </InfoRow>
-
-            {/* Tutores: solo llegan del servidor a los roles que pueden verlos */}
-            {player.guardians && (
-              <InfoRow label="Tutores">
-                {player.guardians.length === 0 ? (
-                  "Sin tutores registrados"
-                ) : (
-                  <ul className="space-y-1">
-                    {player.guardians.map((g, i) => (
-                      <li key={i}>
-                        <span className="font-medium">{g.name}</span> ({g.relationship})
-                        {g.phone && (
-                          <>
-                            {" · "}
-                            <a href={`tel:${g.phone}`} className="text-green-700 underline">
-                              {g.phone}
-                            </a>
-                          </>
-                        )}
-                        {g.email && (
-                          <>
-                            {" · "}
-                            <a href={`mailto:${g.email}`} className="text-green-700 underline">
-                              {g.email}
-                            </a>
-                          </>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </InfoRow>
-            )}
-
-            {/* Contrato y sueldo: solo los ve el entrenador principal */}
-            {canEditContract(role) && (
-              <InfoRow label="Contrato">
-                {player.contract ? (
-                  <>
-                    Hasta el {formatDate(player.contract.endDate)} (
-                    {player.contract.yearsLeft > 0
-                      ? `${player.contract.yearsLeft.toLocaleString("es-ES")} años restantes`
-                      : "finalizado"}
-                    )
-                  </>
-                ) : (
-                  "Sin contrato registrado"
-                )}
-              </InfoRow>
-            )}
-            {typeof salary === "number" && (
-              <InfoRow label="Sueldo">
-                {formatMoney(salary)} {player.contract?.salaryPeriod === "yearly" ? "/ año" : "/ mes"}
-              </InfoRow>
-            )}
-          </dl>
-        </section>
-
-        {/* Columna derecha: estadísticas e historial */}
-        <div className="space-y-4">
-          {canSeeStats(role) && (
-            <section className="rounded border border-gray-200 p-4">
-              <h2 className="mb-3 text-lg font-semibold">Estadísticas</h2>
-              <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
-                {STAT_COLUMNS.filter((col) => !col.goalkeeperOnly || goalkeeper).map((col) => (
-                  <div key={col.key} className="rounded bg-gray-50 p-2">
-                    <p className="text-xl font-bold tabular-nums">
-                      {player.stats?.[col.key] ?? "–"}
-                    </p>
-                    <p className="text-xs text-gray-600">{col.title}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section className="rounded border border-gray-200 p-4">
-            <h2 className="mb-3 text-lg font-semibold">Historial de partidos</h2>
-            <p className="text-sm text-gray-600">
-              Aún no hay partidos. Aquí aparecerán la convocatoria, los minutos y los goles de
-              cada partido.
-            </p>
-          </section>
+      {/* Modo edición: el formulario sustituye al contenido de la ficha */}
+      {editing ? (
+        <div className="mt-6 max-w-2xl">
+          <PlayerForm
+            teamId={current.team!._id}
+            role={role}
+            defaultCategory={player.licenseCategory}
+            player={player}
+            onDone={() => setEditing(false)}
+          />
         </div>
-      </div>
+      ) : (
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          {/* Columna izquierda: información adicional */}
+          <section className="rounded border border-gray-200 p-4">
+            <h2 className="mb-3 text-lg font-semibold">Información</h2>
+            <dl className="space-y-3 text-sm">
+              <InfoRow label="Fecha de nacimiento">{formatDate(player.birthDate)}</InfoRow>
+              <InfoRow label="Ficha">{CATEGORY_LABELS[player.licenseCategory]}</InfoRow>
+              <InfoRow label="Posición principal">
+                <span className="flex items-center gap-2">
+                  <PositionBadge position={player.mainPosition} />
+                  {POSITION_LABELS[player.mainPosition]}
+                </span>
+              </InfoRow>
+              <InfoRow label="Posiciones secundarias">
+                {player.secondaryPositions.length === 0 ? (
+                  "Ninguna"
+                ) : (
+                  <span className="flex flex-wrap gap-x-4 gap-y-1">
+                    {player.secondaryPositions.map((p) => (
+                      <span key={p} className="flex items-center gap-1">
+                        <PositionBadge position={p} />
+                        {POSITION_LABELS[p]}
+                      </span>
+                    ))}
+                  </span>
+                )}
+              </InfoRow>
+
+              {/* Tutores: solo llegan del servidor a los roles que pueden verlos */}
+              {player.guardians && (
+                <InfoRow label="Tutores">
+                  {player.guardians.length === 0 ? (
+                    "Sin tutores registrados"
+                  ) : (
+                    <ul className="space-y-1">
+                      {player.guardians.map((g, i) => (
+                        <li key={i}>
+                          <span className="font-medium">{g.name}</span> ({g.relationship})
+                          {g.phone && (
+                            <>
+                              {" · "}
+                              <a href={`tel:${g.phone}`} className="text-green-700 underline">
+                                {g.phone}
+                              </a>
+                            </>
+                          )}
+                          {g.email && (
+                            <>
+                              {" · "}
+                              <a href={`mailto:${g.email}`} className="text-green-700 underline">
+                                {g.email}
+                              </a>
+                            </>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </InfoRow>
+              )}
+
+              {/* Contrato y sueldo: solo los ve el entrenador principal */}
+              {canEditContract(role) && (
+                <InfoRow label="Contrato">
+                  {player.contract ? (
+                    <>
+                      Hasta el {formatDate(player.contract.endDate)} (
+                      {player.contract.yearsLeft > 0
+                        ? `${player.contract.yearsLeft.toLocaleString("es-ES")} años restantes`
+                        : "finalizado"}
+                      )
+                    </>
+                  ) : (
+                    "Sin contrato registrado"
+                  )}
+                </InfoRow>
+              )}
+              {typeof salary === "number" && (
+                <InfoRow label="Sueldo">
+                  {formatMoney(salary)}{" "}
+                  {player.contract?.salaryPeriod === "yearly" ? "/ año" : "/ mes"}
+                </InfoRow>
+              )}
+            </dl>
+          </section>
+
+          {/* Columna derecha: estadísticas e historial */}
+          <div className="space-y-4">
+            {canSeeStats(role) && (
+              <section className="rounded border border-gray-200 p-4">
+                <h2 className="mb-3 text-lg font-semibold">Estadísticas</h2>
+                <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
+                  {STAT_COLUMNS.filter((col) => !col.goalkeeperOnly || goalkeeper).map((col) => (
+                    <div key={col.key} className="rounded bg-gray-50 p-2">
+                      <p className="text-xl font-bold tabular-nums">
+                        {player.stats?.[col.key] ?? "–"}
+                      </p>
+                      <p className="text-xs text-gray-600">{col.title}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section className="rounded border border-gray-200 p-4">
+              <h2 className="mb-3 text-lg font-semibold">Historial de partidos</h2>
+              <p className="text-sm text-gray-600">
+                Aún no hay partidos. Aquí aparecerán la convocatoria, los minutos y los goles de
+                cada partido.
+              </p>
+            </section>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

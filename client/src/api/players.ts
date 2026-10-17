@@ -85,3 +85,17 @@ export interface PlayerStats {
 /** Quita un jugador de la plantilla de la temporada actual. */
 export const deletePlayer = (teamId: string, playerId: string) =>
   api<void>(`/teams/${teamId}/players/${playerId}`, { method: "DELETE" });
+
+/** Sustituye los datos editables de un jugador (persona y ficha de la temporada actual). */
+export const updatePlayer = (teamId: string, playerId: string, data: CreatePlayerData) =>
+  api<SquadPlayer>(`/teams/${teamId}/players/${playerId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+/** Cambia solo el estado de un jugador. */
+export const updatePlayerStatus = (teamId: string, playerId: string, status: PlayerStatus) =>
+  api<{ id: string; status: PlayerStatus }>(`/teams/${teamId}/players/${playerId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });

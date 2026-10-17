@@ -4,10 +4,14 @@ interface FormSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
   options: { value: string; label: string }[];
   error?: string;
+  // Si se indica, la opción vacía se puede volver a elegir, con este texto
+  // (por ejemplo "Sin nacionalidad"). Si no, aparece "Selecciona..." y no se
+  // puede elegir: pensado para los campos obligatorios.
+  emptyLabel?: string;
 }
 
 /** Desplegable con etiqueta y mensaje de error opcional. */
-function FormSelect({ label, options, error, id, ...selectProps }: FormSelectProps) {
+function FormSelect({ label, options, error, emptyLabel, id, ...selectProps }: FormSelectProps) {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-gray-700">
@@ -18,9 +22,13 @@ function FormSelect({ label, options, error, id, ...selectProps }: FormSelectPro
         className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2"
         {...selectProps}
       >
-        <option value="" disabled>
-          Selecciona...
-        </option>
+        {emptyLabel ? (
+          <option value="">{emptyLabel}</option>
+        ) : (
+          <option value="" disabled>
+            Selecciona...
+          </option>
+        )}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

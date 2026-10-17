@@ -1,4 +1,7 @@
 import type { Role } from "../models/Membership";
+import { PLAYER_STATUSES } from "../models/PlayerSeason";
+
+type PlayerStatus = (typeof PLAYER_STATUSES)[number];
 
 /** Quién puede crear y editar jugadores de la plantilla. */
 export const canEditSquad = (role: Role) =>
@@ -13,3 +16,18 @@ export const canSeeGuardians = (role: Role) =>
 
 /** Estadísticas: todos los roles menos el médico. */
 export const canSeeStats = (role: Role) => role !== "medical";
+
+/**
+ * Cambiar el estado de un jugador. El entrenador principal y el segundo
+ * entrenador pueden asignar cualquiera. El médico solo alterna entre
+ * "disponible" y "lesionado", para no pisar sanciones ni bajas decididas
+ * por el cuerpo técnico.
+ */
+export const canSetStatus = (role: Role, from: PlayerStatus, to: PlayerStatus) => {
+  if (role === "head_coach" || role === "assistant_coach") return true;
+  if (role === "medical") {
+    const medicalStates: PlayerStatus[] = ["available", "injured"];
+    return medicalStates.includes(from) && medicalStates.includes(to);
+  }
+  return false;
+};

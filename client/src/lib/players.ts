@@ -8,6 +8,9 @@ export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   inactive: "Inactivo",
 };
 
+// Lista de estados en el orden en que se muestran los botones de cambio
+export const PLAYER_STATUS_LIST = Object.keys(PLAYER_STATUS_LABELS) as PlayerStatus[];
+
 export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
   available: "bg-green-100 text-green-800",
   injured: "bg-orange-100 text-orange-800",
@@ -24,5 +27,20 @@ export const canEditSquad = (role: Role) =>
 
 export const canEditContract = (role: Role) => role === "head_coach";
 
-// Solo para mostrar u ocultar columnas. El servidor es quien decide si envía las estadísticas.
+// Solo para mostrar u ocultar columnas. El servidor es quien decide si
+// envía las estadísticas.
 export const canSeeStats = (role: Role) => role !== "medical";
+
+/**
+ * Cambiar el estado de un jugador. El entrenador principal y el segundo
+ * entrenador pueden asignar cualquiera. El médico solo alterna entre
+ * disponible y lesionado. Debe coincidir con el servidor.
+ */
+export function canSetStatus(role: Role, from: PlayerStatus, to: PlayerStatus) {
+  if (role === "head_coach" || role === "assistant_coach") return true;
+  if (role === "medical") {
+    const medicalStates: PlayerStatus[] = ["available", "injured"];
+    return medicalStates.includes(from) && medicalStates.includes(to);
+  }
+  return false;
+}
