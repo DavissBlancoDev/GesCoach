@@ -1,4 +1,5 @@
-import type { Role } from "../api/teams";
+import type { Category, Role } from "../api/teams";
+import { CATEGORY_LABELS } from "./teams";
 import type { PlayerStatus } from "../api/players";
 
 export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
@@ -48,3 +49,7 @@ export function canSetStatus(role: Role, from: PlayerStatus, to: PlayerStatus) {
 // Notas del entrenador: solo el entrenador principal. Igual que el resto,
 // sirve para mostrar u ocultar la sección; el servidor es quien lo decide.
 export const canManageNotes = (role: Role) => role === "head_coach";
+
+/** Ficha del jugador como texto: "Infantil C", o solo "Infantil" si no tiene letra. */
+export const licenseLabel = (category: Category, letter?: string) =>
+  letter ? `${CATEGORY_LABELS[category]} ${letter}` : CATEGORY_LABELS[category];

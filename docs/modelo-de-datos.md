@@ -136,6 +136,7 @@ El jugador **dentro de la plantilla de una temporada**. Al finalizar la temporad
 | `player` | referencia a Player | Obligatorio |
 | `season` | referencia a Season | Obligatorio |
 | `licenseCategory` | lista cerrada | Tipo de ficha en esa temporada. Mismas categorías que Season |
+| `licenseLetter` | texto | Opcional. Una letra mayúscula (A-Z) junto a la categoría, por ejemplo "Infantil C". Es propia de cada jugador y no tiene por qué coincidir con la letra del equipo: puede tener ficha de una categoría inferior y jugar con un equipo superior |
 | `jerseyNumber` | número 0-99 | Opcional. Dorsal fijo de la temporada |
 | `mainPosition` | lista cerrada | Posición principal |
 | `secondaryPositions` | lista | Posiciones secundarias |
@@ -274,7 +275,3 @@ Reglas:
 - Un jugador que llega a mitad de temporada solo cuenta los entrenos posteriores a su incorporación, de forma natural: no tiene registro de los anteriores.
 - Los entrenos suspendidos no cuentan para nadie. Habrá un estado de la sesión (celebrado o suspendido).
 - Si un jugador está marcado como lesionado en la plantilla, la lista puede sugerir la ausencia justificada, pero nunca la aplica sola.
-
-### Cambios previstos en entidades existentes
-
-- **PlayerSeason:** letra opcional de una sola mayúscula (A, B, C...) junto a la categoría de la ficha, para saber que un jugador es, por ejemplo, del Infantil C. Va en la ficha de la temporada, y no en la persona, porque cambia al cambiar de equipo del club o de categoría.

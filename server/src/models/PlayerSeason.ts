@@ -8,6 +8,7 @@ interface IPlayerSeason {
   player: Types.ObjectId;
   season: Types.ObjectId;
   licenseCategory: (typeof CATEGORIES)[number];
+  licenseLetter?: string;
   jerseyNumber?: number;
   mainPosition: (typeof POSITIONS)[number];
   secondaryPositions: (typeof POSITIONS)[number][];
@@ -25,6 +26,16 @@ const playerSeasonSchema = new Schema<IPlayerSeason>(
     season: { type: Schema.Types.ObjectId, ref: "Season", required: true },
     // Tipo de ficha en esa temporada (cambia cuando suben de categoría)
     licenseCategory: { type: String, enum: CATEGORIES, required: true },
+    // Letra de la ficha (A, B, C...). Opcional y propia de cada jugador: no
+    // tiene por qué coincidir con la letra del equipo, porque un jugador
+    // puede tener ficha de una categoría inferior (por ejemplo, Alevín B) y
+    // jugar con el Infantil C.
+    licenseLetter: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      match: [/^[A-Z]$/, "Una sola letra, de la A a la Z"],
+    },
     // Dorsal fijo y opcional. El cambio puntual de un partido irá en la convocatoria.
     jerseyNumber: { type: Number, min: 0, max: 99 },
     mainPosition: { type: String, enum: POSITIONS, required: true },

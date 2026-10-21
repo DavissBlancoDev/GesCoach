@@ -79,6 +79,12 @@ const playerSchema = z
     contract: contractSchema.optional(),
     // Datos de la temporada
     licenseCategory: z.enum(CATEGORIES),
+    licenseLetter: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]$/, "Una sola letra, de la A a la Z")
+      .optional(),
     jerseyNumber: z.number().int().min(0).max(99).optional(),
     mainPosition: z.enum(POSITIONS),
     secondaryPositions: z.array(z.enum(POSITIONS)).max(4).default([]),
@@ -109,6 +115,7 @@ function toSquadItem(player: PlayerDoc, entry: SquadEntryDoc, role: Role, stats:
     age: player.age,
     nationality: player.nationality,
     licenseCategory: entry.licenseCategory,
+    licenseLetter: entry.licenseLetter,
     jerseyNumber: entry.jerseyNumber,
     mainPosition: entry.mainPosition,
     secondaryPositions: entry.secondaryPositions,
@@ -206,7 +213,7 @@ router.post<TeamParams>("/", async (req, res) => {
   }
 
   // Separamos los datos de la persona de los de la temporada
-  const { licenseCategory, jerseyNumber, mainPosition, secondaryPositions, status, ...personData } =
+  const { licenseCategory, licenseLetter, jerseyNumber, mainPosition, secondaryPositions, status, ...personData } =
     parsed.data;
 
   // requireTeamMember ya comprobó que teamId es un identificador válido
@@ -221,6 +228,7 @@ router.post<TeamParams>("/", async (req, res) => {
             player: player._id,
             season: season._id,
             licenseCategory,
+            licenseLetter,
             jerseyNumber,
             mainPosition,
             secondaryPositions,
@@ -310,6 +318,7 @@ router.put<PlayerParams>("/:playerId", async (req, res) => {
 
       // Datos de la ficha de la temporada
       entry.licenseCategory = d.licenseCategory;
+      entry.licenseLetter = d.licenseLetter;
       entry.jerseyNumber = d.jerseyNumber;
       entry.mainPosition = d.mainPosition;
       entry.secondaryPositions = d.secondaryPositions;

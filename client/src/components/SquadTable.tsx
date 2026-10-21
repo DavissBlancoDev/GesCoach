@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import type { SquadPlayer } from "../api/players";
 import { STAT_COLUMNS, isGoalkeeper } from "../lib/stats";
+import { licenseLabel } from "../lib/players";
 import Flag from "./Flag";
 import PositionBadge from "./PositionBadge";
 import StatusIcon from "./StatusIcon";
@@ -34,6 +35,7 @@ function SquadTable({ players, showStats }: SquadTableProps) {
               </th>
               <th className="px-1 py-2 sm:px-2" aria-label="Nacionalidad" />
               <th className="px-1 py-2 text-left sm:px-2">Pos</th>
+              <th className="hidden px-2 py-2 text-left md:table-cell">Ficha</th>
               {showStats &&
                 STAT_COLUMNS.map((col) => (
                   <th
@@ -70,7 +72,7 @@ function SquadTable({ players, showStats }: SquadTableProps) {
                       <Link
                         to={`/plantilla/${player.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="max-w-26 truncate font-medium hover:underline sm:max-w-none"
+                        className="max-w-[6.5rem] truncate font-medium hover:underline sm:max-w-none"
                       >
                         {displayName}
                       </Link>
@@ -82,6 +84,9 @@ function SquadTable({ players, showStats }: SquadTableProps) {
                   </td>
                   <td className="px-1 py-2 group-hover:bg-gray-50 sm:px-2">
                     <PositionBadge position={player.mainPosition} />
+                  </td>
+                  <td className="hidden whitespace-nowrap px-2 py-2 group-hover:bg-gray-50 md:table-cell">
+                    {licenseLabel(player.licenseCategory, player.licenseLetter)}
                   </td>
                   {showStats &&
                     STAT_COLUMNS.map((col) => {

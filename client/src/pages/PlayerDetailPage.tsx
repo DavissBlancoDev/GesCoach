@@ -9,7 +9,6 @@ import {
 } from "../api/players";
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { usePlayers } from "../hooks/usePlayers";
-import { CATEGORY_LABELS } from "../lib/teams";
 import { countryName } from "../lib/countries";
 import { POSITION_LABELS } from "../lib/positions";
 import { STAT_COLUMNS, isGoalkeeper } from "../lib/stats";
@@ -22,6 +21,7 @@ import {
   canManageNotes,
   canSeeStats,
   canSetStatus,
+  licenseLabel,
 } from "../lib/players";
 import Flag from "../components/Flag";
 import PlayerForm from "../components/PlayerForm";
@@ -249,7 +249,9 @@ function PlayerDetailPage() {
             <h2 className="mb-3 text-lg font-semibold">Información</h2>
             <dl className="space-y-3 text-sm">
               <InfoRow label="Fecha de nacimiento">{formatDate(player.birthDate)}</InfoRow>
-              <InfoRow label="Ficha">{CATEGORY_LABELS[player.licenseCategory]}</InfoRow>
+              <InfoRow label="Ficha">
+                {licenseLabel(player.licenseCategory, player.licenseLetter)}
+              </InfoRow>
               <InfoRow label="Posición principal">
                 <span className="flex items-center gap-2">
                   <PositionBadge position={player.mainPosition} />

@@ -31,6 +31,7 @@ export interface SquadPlayer {
   age: number;
   nationality?: string;
   licenseCategory: Category;
+  licenseLetter?: string;
   jerseyNumber?: number;
   mainPosition: Position;
   secondaryPositions: Position[];
@@ -50,6 +51,7 @@ export interface CreatePlayerData {
   guardians: Guardian[];
   contract?: Contract;
   licenseCategory: Category;
+  licenseLetter?: string;
   jerseyNumber?: number;
   mainPosition: Position;
   secondaryPositions: Position[];

@@ -5,6 +5,9 @@ import { login, register, type RegisterData } from "../api/auth";
 import { getFieldErrors } from "../api/client";
 import { useSession } from "../hooks/useSession";
 import FormField from "../components/FormField";
+import DateSelect from "../components/DateSelect";
+
+const currentYear = new Date().getFullYear();
 
 function RegisterPage() {
   const [form, setForm] = useState<RegisterData>({
@@ -66,13 +69,13 @@ function RegisterPage() {
           error={firstError("surname")}
           required
         />
-        <FormField
+        <DateSelect
           id="birthDate"
           label="Fecha de nacimiento"
-          type="date"
-          autoComplete="bday"
           value={form.birthDate}
-          onChange={(e) => update("birthDate", e.target.value)}
+          onChange={(value) => update("birthDate", value)}
+          minYear={currentYear - 90}
+          maxYear={currentYear - 16}
           error={firstError("birthDate")}
           required
         />

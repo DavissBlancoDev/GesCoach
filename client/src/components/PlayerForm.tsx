@@ -22,6 +22,7 @@ import {
 import { PLAYER_STATUS_LABELS, canEditContract } from "../lib/players";
 import FormField from "./FormField";
 import FormSelect from "./FormSelect";
+import DateSelect from "./DateSelect";
 
 interface PlayerFormProps {
   teamId: string;
@@ -42,6 +43,7 @@ interface FormState {
   birthDate: string;
   nationality: string;
   licenseCategory: Category;
+  licenseLetter: string;
   jerseyNumber: string;
   mainPosition: Position | "";
   status: PlayerStatus;
@@ -56,6 +58,8 @@ interface GuardianForm {
 }
 
 const MAX_GUARDIANS = 4;
+
+const currentYear = new Date().getFullYear();
 
 type SalaryPeriod = "monthly" | "yearly";
 
@@ -97,6 +101,7 @@ function PlayerForm({ teamId, role, defaultCategory, player, onDone }: PlayerFor
     birthDate: toDateInput(player?.birthDate),
     nationality: player?.nationality ?? "",
     licenseCategory: player?.licenseCategory ?? defaultCategory,
+    licenseLetter: player?.licenseLetter ?? "",
     jerseyNumber: String(player?.jerseyNumber ?? ""),
     mainPosition: player?.mainPosition ?? "",
     status: player?.status ?? "available",
@@ -181,6 +186,7 @@ function PlayerForm({ teamId, role, defaultCategory, player, onDone }: PlayerFor
       birthDate: form.birthDate,
       nationality: form.nationality || undefined,
       licenseCategory: form.licenseCategory,
+      licenseLetter: form.licenseLetter || undefined,
       jerseyNumber: form.jerseyNumber === "" ? undefined : Number(form.jerseyNumber),
       mainPosition: form.mainPosition,
       secondaryPositions: secondary,
@@ -244,13 +250,14 @@ function PlayerForm({ teamId, role, defaultCategory, player, onDone }: PlayerFor
         error={firstError("nickname")}
         maxLength={40}
       />
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
+      <div className="grid gap-4 sm:grid-cols-2">
+        <DateSelect
           id="birthDate"
           label="Fecha de nacimiento"
-          type="date"
           value={form.birthDate}
-          onChange={(e) => update("birthDate", e.target.value)}
+          onChange={(value) => update("birthDate", value)}
+          minYear={currentYear - 40}
+          maxYear={currentYear}
           error={firstError("birthDate")}
           required
         />
@@ -267,14 +274,31 @@ function PlayerForm({ teamId, role, defaultCategory, player, onDone }: PlayerFor
 
       {/* Datos de la temporada */}
       <div className="grid grid-cols-2 gap-4">
-        <FormSelect
-          id="licenseCategory"
-          label="Ficha"
-          value={form.licenseCategory}
-          onChange={(e) => update("licenseCategory", e.target.value as Category)}
-          options={toOptions(CATEGORY_LABELS)}
-          required
-        />
+        {/* Categoría de la ficha y, al lado, su letra (A, B, C...) */}
+        <div className="flex gap-2">
+          <div className="min-w-0 flex-1">
+            <FormSelect
+              id="licenseCategory"
+              label="Ficha"
+              value={form.licenseCategory}
+              onChange={(e) => update("licenseCategory", e.target.value as Category)}
+              options={toOptions(CATEGORY_LABELS)}
+              required
+            />
+          </div>
+          <div className="w-14">
+            <FormField
+              id="licenseLetter"
+              label="Letra"
+              placeholder="A"
+              maxLength={1}
+              value={form.licenseLetter}
+              onChange={(e) =>
+                update("licenseLetter", e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase())
+              }
+            />
+          </div>
+        </div>
         <FormField
           id="jerseyNumber"
           label="Dorsal (opcional)"
@@ -429,20 +453,24 @@ function PlayerForm({ teamId, role, defaultCategory, player, onDone }: PlayerFor
           </label>
           {withContract && (
             <>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DateSelect
                   id="contractStart"
                   label="Inicio (opcional)"
-                  type="date"
                   value={contract.startDate}
-                  onChange={(e) => setContract({ ...contract, startDate: e.target.value })}
+                  onChange={(value) => setContract({ ...contract, startDate: value })}
+                  minYear={currentYear - 5}
+                  maxYear={currentYear + 10}
+                  order="asc"
                 />
-                <FormField
+                <DateSelect
                   id="contractEnd"
                   label="Fin del contrato"
-                  type="date"
                   value={contract.endDate}
-                  onChange={(e) => setContract({ ...contract, endDate: e.target.value })}
+                  onChange={(value) => setContract({ ...contract, endDate: value })}
+                  minYear={currentYear - 5}
+                  maxYear={currentYear + 10}
+                  order="asc"
                   required
                 />
               </div>

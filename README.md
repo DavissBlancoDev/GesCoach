@@ -23,6 +23,8 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [x] 📋 Pantalla de plantilla: tabla con posiciones abreviadas, banderas, estado y estadísticas por jugador
 - [x] 🪪 Ficha del jugador y eliminación de la plantilla
 - [x] ✏️ Editar jugador y cambio rápido de estado (lesionado, sancionado...)
+- [x] 📆 Selector de fechas con desplegables de día, mes y año
+- [x] 🔤 Letra de la ficha del jugador (por ejemplo, Infantil C)
 
 ### 🔨 En curso
 
@@ -35,8 +37,6 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [ ] 📄 Importación de jornadas desde los PDF de la federación, con vista previa antes de guardar
 - [ ] 📝 Partidos: convocatoria (con límite según la competición), alineación por formaciones y acta
 - [ ] 🏃 Entrenos con objetivos y control de asistencia (asiste, ausencia justificada o injustificada) y porcentajes por jugador
-- [ ] 📆 Selector de fechas más cómodo para elegir el año (fecha de nacimiento)
-- [ ] 🔤 Letra del equipo en la ficha del jugador (por ejemplo, Infantil C)
 - [ ] 📅 Calendario mensual
 - [ ] 📊 Estadísticas de jugadores y de equipo
 - [ ] 🏠 Dashboard: próximo partido, próximo entreno, disponibilidad y riesgo de sanción
