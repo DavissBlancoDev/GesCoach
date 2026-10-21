@@ -44,3 +44,7 @@ export function canSetStatus(role: Role, from: PlayerStatus, to: PlayerStatus) {
   }
   return false;
 }
+
+// Notas del entrenador: solo el entrenador principal. Igual que el resto,
+// sirve para mostrar u ocultar la sección; el servidor es quien lo decide.
+export const canManageNotes = (role: Role) => role === "head_coach";

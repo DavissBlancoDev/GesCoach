@@ -19,11 +19,13 @@ import {
   PLAYER_STATUS_LIST,
   canEditContract,
   canEditSquad,
+  canManageNotes,
   canSeeStats,
   canSetStatus,
 } from "../lib/players";
 import Flag from "../components/Flag";
 import PlayerForm from "../components/PlayerForm";
+import PlayerNotes from "../components/PlayerNotes";
 import PositionBadge from "../components/PositionBadge";
 import StatusIcon from "../components/StatusIcon";
 
@@ -354,6 +356,11 @@ function PlayerDetailPage() {
             </section>
           </div>
         </div>
+      )}
+
+      {/* Notas del entrenador: solo las ve el entrenador principal */}
+      {!editing && canManageNotes(role) && (
+        <PlayerNotes teamId={current.team!._id} playerId={player.id} />
       )}
     </main>
   );

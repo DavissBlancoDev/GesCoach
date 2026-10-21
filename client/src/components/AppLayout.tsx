@@ -25,6 +25,7 @@ function AppLayout() {
       // persona que inicie sesión después en el mismo navegador
       queryClient.removeQueries({ queryKey: ["teams"] });
       queryClient.removeQueries({ queryKey: ["players"] });
+      queryClient.removeQueries({ queryKey: ["playerNotes"] });
     },
   });
 
