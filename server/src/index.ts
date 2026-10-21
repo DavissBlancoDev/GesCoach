@@ -7,6 +7,7 @@ import authRouter from "./routes/auth";
 import cookieParser from "cookie-parser";
 import teamsRouter from "./routes/teams";
 import playersRouter from "./routes/players";
+import playerNotesRouter from "./routes/playerNotes";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -14,6 +15,7 @@ const port = Number(process.env.PORT) || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
+app.use("/api/teams/:teamId/players/:playerId/notes", playerNotesRouter);
 app.use("/api/teams/:teamId/players", playersRouter);
 
 app.get("/api/health", (_req, res) => {

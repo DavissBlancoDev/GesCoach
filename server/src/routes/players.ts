@@ -6,6 +6,7 @@ import { requireTeamMember } from "../middleware/requireTeamMember";
 import { Player, SALARY_PERIODS } from "../models/Player";
 import { PlayerSeason, PLAYER_STATUSES } from "../models/PlayerSeason";
 import { Season, CATEGORIES } from "../models/Season";
+import { PlayerNote } from "../models/PlayerNote";
 import type { Role } from "../models/Membership";
 import { POSITIONS } from "../lib/positions";
 import {
@@ -381,8 +382,8 @@ router.patch<PlayerParams>("/:playerId/status", async (req, res) => {
 /**
  * DELETE /api/teams/:teamId/players/:playerId
  * Quita al jugador de la plantilla de la temporada actual. Si no ha estado
- * en ninguna otra temporada, borra también al jugador (la persona), para
- * no dejar datos personales sin uso.
+ * en ninguna otra temporada, borra también al jugador (la persona) y sus
+ * notas, para no dejar datos personales sin uso.
  *
  * IMPORTANTE: cuando existan partidos y actas, esta ruta tendrá que
  * rechazar el borrado de jugadores con participación registrada (409) y
@@ -422,6 +423,8 @@ router.delete<PlayerParams>("/:playerId", async (req, res) => {
 
     const remaining = await PlayerSeason.countDocuments({ player: player._id }).session(session);
     if (remaining === 0) {
+      // Sus notas se borran con él, en la misma transacción
+      await PlayerNote.deleteMany({ player: player._id }).session(session);
       await Player.deleteOne({ _id: player._id }).session(session);
     }
   });

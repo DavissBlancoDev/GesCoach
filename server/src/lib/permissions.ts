@@ -31,3 +31,10 @@ export const canSetStatus = (role: Role, from: PlayerStatus, to: PlayerStatus) =
   }
   return false;
 };
+
+/**
+ * Notas del entrenador sobre los jugadores: solo el entrenador principal.
+ * Pueden contener datos personales de menores, por eso no se comparten ni
+ * con el segundo entrenador.
+ */
+export const canManageNotes = (role: Role) => role === "head_coach";
