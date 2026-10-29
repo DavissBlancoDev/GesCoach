@@ -38,3 +38,7 @@ export const canSetStatus = (role: Role, from: PlayerStatus, to: PlayerStatus) =
  * con el segundo entrenador.
  */
 export const canManageNotes = (role: Role) => role === "head_coach";
+
+/** Crear y editar entrenos y pasar lista: entrenador principal y segundo entrenador. */
+export const canManageTrainings = (role: Role) =>
+  role === "head_coach" || role === "assistant_coach";

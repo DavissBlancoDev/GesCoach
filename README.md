@@ -28,7 +28,7 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 
 ### 🔨 En curso
 
-- [ ] 🗒️ Notas del entrenador y tarjeta de asistencia en la ficha del jugador
+- [ ] 🏃 Entrenos: crear, pasar lista con tres estados y tarjeta de asistencia en la ficha del jugador
 
 ### 🔮 Previsto
 
@@ -36,11 +36,12 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [ ] 🏆 Competiciones, equipos rivales, calendario y clasificación calculada
 - [ ] 📄 Importación de jornadas desde los PDF de la federación, con vista previa antes de guardar
 - [ ] 📝 Partidos: convocatoria (con límite según la competición), alineación por formaciones y acta
-- [ ] 🏃 Entrenos con objetivos y control de asistencia (asiste, ausencia justificada o injustificada) y porcentajes por jugador
 - [ ] 📅 Calendario mensual
 - [ ] 📊 Estadísticas de jugadores y de equipo
 - [ ] 🏠 Dashboard: próximo partido, próximo entreno, disponibilidad y riesgo de sanción
 - [ ] 💌 Invitaciones por enlace (un solo uso, caducan a los 7 días) y permisos por rol
+- [ ] 🔑 Recuperar la contraseña por email (enlace de un solo uso con caducidad)
+- [ ] 🌐 Iniciar sesión con Google y otras redes sociales
 - [ ] 🛡️ Subida del escudo del equipo
 
 ## 🛠️ Stack

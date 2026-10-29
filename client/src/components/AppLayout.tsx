@@ -26,6 +26,8 @@ function AppLayout() {
       queryClient.removeQueries({ queryKey: ["teams"] });
       queryClient.removeQueries({ queryKey: ["players"] });
       queryClient.removeQueries({ queryKey: ["playerNotes"] });
+      queryClient.removeQueries({ queryKey: ["trainings"] });
+      queryClient.removeQueries({ queryKey: ["training"] });
     },
   });
 
@@ -33,13 +35,18 @@ function AppLayout() {
     <>
       <header className="border-b border-gray-200">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 p-3">
-          <span className="truncate font-bold">{current?.team?.name ?? "GesCoach"}</span>
+          <span className="truncate font-bold">
+            {current?.team?.name ?? "GesCoach"}
+          </span>
           <nav className="flex gap-1">
             <NavLink to="/" end className={linkClass}>
               Inicio
             </NavLink>
             <NavLink to="/plantilla" className={linkClass}>
               Plantilla
+            </NavLink>
+            <NavLink to="/entrenos" className={linkClass}>
+              Entrenos
             </NavLink>
           </nav>
           <button

@@ -8,6 +8,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import RequireTeam from "./components/RequireTeam";
 import AppLayout from "./components/AppLayout";
 import PlayerDetailPage from "./pages/PlayerDetailPage";
+import TrainingsPage from "./pages/TrainingsPage";
+import TrainingDetailPage from "./pages/TrainingDetailPage";
 
 function GesCoach() {
   return (
@@ -24,6 +26,8 @@ function GesCoach() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/plantilla" element={<SquadPage />} />
             <Route path="/plantilla/:playerId" element={<PlayerDetailPage />} />
+            <Route path="/entrenos" element={<TrainingsPage />} />
+            <Route path="/entrenos/:trainingId" element={<TrainingDetailPage />} />
           </Route>
         </Route>
       </Route>
