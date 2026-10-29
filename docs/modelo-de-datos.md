@@ -21,6 +21,10 @@ erDiagram
     TEAM ||--o{ PLAYER : "tiene"
     PLAYER ||--o{ PLAYER_SEASON : "participa en"
     SEASON ||--o{ PLAYER_SEASON : "reúne"
+    SEASON ||--o{ TRAINING : "incluye"
+    TRAINING ||--o{ ATTENDANCE : "registra"
+    PLAYER ||--o{ ATTENDANCE : "tiene"
+    PLAYER ||--o{ PLAYER_NOTE : "tiene"
 ```
 
 ## Entidades implementadas
@@ -151,6 +155,70 @@ Restricciones:
 
 El estado guarda solo la situación del jugador, sin detalles clínicos.
 
+### PlayerNote
+
+Notas del entrenador sobre un jugador, en forma de lista de entradas con fecha y no como un único campo de texto.
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `team` | referencia a Team | Se guarda también el equipo para filtrar siempre por él |
+| `player` | referencia a Player | La persona, no la temporada, para que el seguimiento se conserve entre temporadas |
+| `author` | referencia a User | Quien la escribió |
+| `text` | texto | Obligatorio, máximo 2.000 caracteres |
+
+Reglas:
+
+- Solo las ve y las gestiona el **entrenador principal**. El servidor no las envía a ningún otro rol.
+- Se guardan en su propia colección y se piden solo al abrir la ficha.
+- Al eliminar a un jugador que no ha estado en otra temporada se borran también sus notas, dentro de la misma transacción.
+- Pueden contener datos personales de menores y los tutores pueden pedir acceso a ellos. La interfaz avisa de que no deben anotarse diagnósticos ni datos de salud.
+
+### Training
+
+Un entreno de una temporada.
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `team` | referencia a Team | Obligatorio |
+| `season` | referencia a Season | Obligatorio |
+| `date` | fecha | Obligatoria. Se guarda a medianoche UTC, igual que las fechas de nacimiento |
+| `startTime` | texto | Opcional. Formato `HH:MM` |
+| `durationMinutes` | número | Opcional. De 10 a 240 |
+| `location` | texto | Opcional. Al crear se propone el campo local del equipo |
+| `objectives` | texto | Opcional. Texto libre, máximo 1.000 caracteres |
+| `status` | lista cerrada | `scheduled` (programado), `held` (celebrado) o `cancelled` (suspendido) |
+
+El estado `held` lo pone el servidor al guardar la lista de asistencia, y no se asigna a mano. Se admiten fechas pasadas, para registrar entrenos que ya se hicieron. Los entrenos suspendidos no cuentan para la asistencia de nadie.
+
+### Attendance
+
+La asistencia de un jugador a un entreno. Hay un registro por jugador y entreno.
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `training` | referencia a Training | Obligatorio |
+| `player` | referencia a Player | Obligatorio |
+| `status` | lista cerrada | `present`, `justified_absence` o `unjustified_absence` |
+
+Al pasar lista, cada jugador se marca con uno de **tres estados**:
+
+| Estado | Botón | Cuenta como |
+|---|---|---|
+| Asiste | Verde | Asistencia |
+| Ausencia justificada | Naranja | Lesión u otra falta que el entrenador considere justificada |
+| Ausencia injustificada | Rojo | Falta sin justificar |
+
+Los botones llevan texto además de color, para que se distingan bien al aire libre y por personas con daltonismo.
+
+En la ficha del jugador se muestran tres porcentajes: asistencia, ausencias justificadas e injustificadas. Se calculan sobre **los entrenos en los que el jugador tiene un registro**, siempre acompañados de los números absolutos (por ejemplo, "23 de 25"), porque un porcentaje sobre dos entrenos no significa lo mismo que sobre veinte.
+
+Reglas:
+
+- **Al pasar lista por primera vez, todos los jugadores no inactivos deben quedar marcados.** Quien se quedara sin marcar no tendría registro y su porcentaje saldría falseado sin avisar.
+- **En un entreno ya celebrado solo se exige lo que ya estaba registrado.** Un jugador que llegó después no tiene por qué contar ese entreno, así que quien llega a mitad de temporada solo cuenta los entrenos posteriores a su incorporación, de forma natural.
+- **Los entrenos suspendidos no cuentan** y en ellos no se puede pasar lista.
+- Si un jugador está marcado como lesionado en la plantilla, la lista sugiere la ausencia justificada, pero nunca la aplica sola.
+
 ## Posiciones
 
 Se guarda la posición concreta. El grupo se deduce de ella con una tabla en el código, de modo que no pueden contradecirse.
@@ -174,7 +242,7 @@ La abreviatura que se muestra en la plantilla (por ejemplo `ED` para extremo der
 | Temporada como texto (`2026/2027`) | Desde `startYear` |
 | Categoría y modalidad para mostrar | Tablas de etiquetas en el cliente |
 | Clasificación *(previsto)* | Desde los resultados de los partidos |
-| Porcentajes de asistencia a entrenos *(previsto)* | Desde los registros de asistencia de cada entreno |
+| Porcentajes de asistencia a entrenos | Desde los registros de asistencia de cada entreno |
 | Estadísticas de jugadores y equipo *(previsto)* | Desde las actas de los partidos |
 
 ## Previsto
@@ -190,10 +258,6 @@ erDiagram
     MATCH ||--o| CALLUP : "tiene"
     CALLUP ||--o| LINEUP : "origina"
     MATCH ||--o| MATCH_REPORT : "genera"
-    SEASON ||--o{ TRAINING : "incluye"
-    TRAINING ||--o{ ATTENDANCE : "registra"
-    PLAYER ||--o{ ATTENDANCE : "tiene"
-    PLAYER ||--o{ PLAYER_NOTE : "tiene"
 ```
 
 ### Invitation
@@ -230,22 +294,6 @@ Ciclo de vida: programado, convocatoria, alineación y acta.
 
 Entidad propia para los campos, porque un mismo campo lo usan varios equipos y puede escribirse de formas distintas según la fuente.
 
-### PlayerNote
-
-Notas del entrenador sobre un jugador, en forma de lista de entradas con fecha y no como un único campo de texto.
-
-| Campo | Notas |
-|---|---|
-| `player` | Referencia al jugador (la persona, no la temporada), para que el seguimiento se conserve entre temporadas |
-| `author` | Usuario que la escribió |
-| `text` | Contenido de la nota |
-
-Reglas:
-
-- Solo las ve y las gestiona el **entrenador principal**. El servidor no las envía a ningún otro rol.
-- Se guardan en su propia colección y se piden solo al abrir la ficha.
-- Al eliminar a un jugador se borran también sus notas, dentro de la misma transacción.
-- Pueden contener datos personales de menores y los tutores pueden pedir acceso a ellos. La interfaz avisa de que no deben anotarse diagnósticos ni datos de salud.
 
 ### Callup, Lineup y MatchReport
 
@@ -253,25 +301,3 @@ Reglas:
 - **Lineup (alineación):** formación elegida (depende de la modalidad), once inicial y suplentes. Los titulares salen de los convocados.
 - **MatchReport (acta):** goleadores, asistentes, tarjetas y cambios. De ella salen los minutos, goles, asistencias y tarjetas de cada jugador.
 
-### Training y Attendance
-
-Entrenos con fecha y objetivos, y el registro de asistencia de cada jugador.
-
-Al pasar lista, cada jugador se marca con uno de **tres estados**:
-
-| Estado | Botón | Cuenta como |
-|---|---|---|
-| Asiste | Verde | Asistencia |
-| Ausencia justificada | Naranja | Lesión u otra falta que el entrenador considere justificada |
-| Ausencia injustificada | Rojo | Falta sin justificar |
-
-Los botones llevan texto además de color, para que se distingan bien al aire libre y por personas con daltonismo.
-
-En la ficha del jugador se muestran tres porcentajes: asistencia, ausencias justificadas y ausencias injustificadas. Se calculan sobre **los entrenos en los que el jugador tiene un registro**, y siempre acompañados de los números absolutos (por ejemplo, "92 % (23 de 25 entrenos)"), porque un porcentaje sobre dos entrenos no significa lo mismo que sobre veinte.
-
-Reglas:
-
-- Al pasar lista, todos los jugadores deben quedar marcados antes de guardar. Quien se quede sin marcar no tendría registro y su porcentaje saldría falseado sin avisar.
-- Un jugador que llega a mitad de temporada solo cuenta los entrenos posteriores a su incorporación, de forma natural: no tiene registro de los anteriores.
-- Los entrenos suspendidos no cuentan para nadie. Habrá un estado de la sesión (celebrado o suspendido).
-- Si un jugador está marcado como lesionado en la plantilla, la lista puede sugerir la ausencia justificada, pero nunca la aplica sola.

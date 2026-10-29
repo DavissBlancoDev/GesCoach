@@ -4,6 +4,15 @@ import type { Position } from "../lib/positions";
 
 export type PlayerStatus = "available" | "injured" | "suspended" | "inactive";
 
+// Asistencia de un jugador a los entrenos de la temporada, en números
+// absolutos. Solo llega si el rol puede ver estadísticas.
+export interface PlayerAttendance {
+  total: number; // entrenos con registro de este jugador
+  present: number;
+  justifiedAbsence: number;
+  unjustifiedAbsence: number;
+}
+
 export interface Guardian {
   name: string;
   relationship: string;
@@ -39,6 +48,7 @@ export interface SquadPlayer {
   guardians?: Guardian[];
   contract?: Contract & { yearsLeft: number }
   stats?: PlayerStats; // solo llega si el rol puede ver estadísticas;
+  attendance?: PlayerAttendance;
 }
 
 // Datos que envía el formulario al añadir un jugador

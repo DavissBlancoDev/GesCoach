@@ -11,7 +11,8 @@ Este documento recoge qué roles existen en un equipo, qué puede hacer cada uno
 | Comprobación de pertenencia al equipo | Implementado |
 | Filtrado de datos sensibles de jugadores según el rol | Implementado |
 | Editar jugadores y cambiar su estado | Implementado |
-| Notas del entrenador sobre los jugadores | Previsto |
+| Notas del entrenador sobre los jugadores | Implementado |
+| Entrenos y pase de lista | Implementado |
 | Invitar a otros miembros | Previsto |
 | Permisos del resto de funciones (convocatoria, acta, estadísticas...) | Diseñado, a medida que se construya cada función |
 
@@ -43,7 +44,7 @@ Es el diseño acordado. Las filas marcadas como *implementado* ya se comprueban 
 |---|---|---|---|---|---|
 | Ver plantilla, calendario y partidos | Sí | Sí | Sí | Sí | Sí |
 | Editar plantilla *(implementado)* | Sí | Sí | No | No | No |
-| Crear entrenos y pasar lista | Sí | Sí | No | No | No |
+| Crear entrenos y pasar lista *(implementado)* | Sí | Sí | No | No | No |
 | **Editar convocatoria y alineación** | **Sí** | No | No | No | No |
 | Ver convocatoria y alineación | Sí | Sí | Sí | No | No |
 | Registrar el acta | Sí | Sí | Sí | No | No |
@@ -63,7 +64,7 @@ Algunos datos de los jugadores solo los ven determinados roles. **El filtrado se
 |---|---|---|---|---|---|
 | Contrato y sueldo *(implementado)* | Sí | No | No | No | No |
 | Contacto de tutores *(implementado)* | Sí | Sí | Sí | No | No |
-| Notas del entrenador *(previsto)* | Sí | No | No | No | No |
+| Notas del entrenador *(implementado)* | Sí | No | No | No | No |
 
 Notas:
 
@@ -77,6 +78,8 @@ Notas:
 - **El estado del jugador tiene su propio permiso**, separado del de editar la plantilla. El entrenador principal y el segundo entrenador pueden asignar cualquier estado. El médico solo alterna entre *disponible* y *lesionado*, y solo si el jugador está en uno de esos dos estados, para no pisar sanciones ni bajas decididas por el cuerpo técnico.
 - **Delegado, responsable de equipo y médico no editan la plantilla.** El médico puede cambiar el estado, pero no el resto de la ficha.
 - **Editar sustituye los datos**: los campos opcionales que no se envían (nacionalidad, dorsal, nombre futbolístico, tutores) se borran. Es lo que permite vaciarlos desde el formulario.
+- **Entrenos y asistencia.** Crear, editar, suspender y borrar entrenos y pasar lista lo hacen el entrenador principal y el segundo entrenador. La lista de jugadores de un entreno y el recuento de asistencia solo se envían a quienes pueden ver estadísticas, así que el médico no los recibe. El delegado y el responsable los ven en solo lectura.
+- **Notas.** Solo el entrenador principal. Cualquier otro rol recibe `403`.
 
 ## Cómo se aplican
 

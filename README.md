@@ -25,10 +25,12 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [x] ✏️ Editar jugador y cambio rápido de estado (lesionado, sancionado...)
 - [x] 📆 Selector de fechas con desplegables de día, mes y año
 - [x] 🔤 Letra de la ficha del jugador (por ejemplo, Infantil C)
+- [x] 🗒️ Notas del entrenador sobre cada jugador (solo entrenador principal)
+- [x] 🏃 Entrenos: crear, pasar lista con tres estados y porcentajes de asistencia en la ficha del jugador
 
 ### 🔨 En curso
 
-- [ ] 🏃 Entrenos: crear, pasar lista con tres estados y tarjeta de asistencia en la ficha del jugador
+_Nada en curso en este momento._
 
 ### 🔮 Previsto
 
@@ -187,6 +189,17 @@ Vite redirige las peticiones de `/api` al servidor, así que el cliente usa ruta
 | PUT | `/api/teams/:teamId/players/:playerId` | Actualiza los datos de un jugador (los campos opcionales que no se envían se borran) |
 | PATCH | `/api/teams/:teamId/players/:playerId/status` | Cambia solo el estado de un jugador |
 | DELETE | `/api/teams/:teamId/players/:playerId` | Quita un jugador de la plantilla de la temporada actual |
+| GET | `/api/teams/:teamId/players/:playerId/notes` | Notas del entrenador sobre un jugador (solo entrenador principal) |
+| POST | `/api/teams/:teamId/players/:playerId/notes` | Añade una nota |
+| PUT | `/api/teams/:teamId/players/:playerId/notes/:noteId` | Edita una nota |
+| DELETE | `/api/teams/:teamId/players/:playerId/notes/:noteId` | Borra una nota |
+| GET | `/api/teams/:teamId/trainings` | Entrenos de la temporada actual |
+| POST | `/api/teams/:teamId/trainings` | Crea un entreno |
+| GET | `/api/teams/:teamId/trainings/:trainingId` | Un entreno con la lista de jugadores y su asistencia |
+| PUT | `/api/teams/:teamId/trainings/:trainingId` | Edita un entreno |
+| PATCH | `/api/teams/:teamId/trainings/:trainingId/status` | Suspende un entreno o lo vuelve a programar |
+| PUT | `/api/teams/:teamId/trainings/:trainingId/attendance` | Guarda la lista de asistencia |
+| DELETE | `/api/teams/:teamId/trainings/:trainingId` | Borra un entreno y su asistencia |
 
 ## 🧠 Decisiones de diseño
 

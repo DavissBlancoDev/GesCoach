@@ -17,6 +17,11 @@ import {
   canSetStatus,
 } from "../lib/permissions";
 import { emptyStats, getSeasonStats, type PlayerStats } from "../lib/playerStats";
+import {
+  emptyAttendance,
+  getSeasonAttendance,
+  type PlayerAttendance,
+} from "../lib/playerAttendance";
 import { yearsUntil } from "../utils/dates";
 
 // mergeParams permite leer :teamId, que viene del router padre en index.ts
@@ -104,7 +109,13 @@ type SquadEntryDoc = InstanceType<typeof PlayerSeason>;
  * estadísticas solo se incluyen si el rol del usuario tiene permiso para
  * verlos.
  */
-function toSquadItem(player: PlayerDoc, entry: SquadEntryDoc, role: Role, stats: PlayerStats) {
+function toSquadItem(
+  player: PlayerDoc,
+  entry: SquadEntryDoc,
+  role: Role,
+  stats: PlayerStats,
+  attendance: PlayerAttendance
+) {
   return {
     id: player.id,
     squadId: entry.id,
@@ -122,6 +133,8 @@ function toSquadItem(player: PlayerDoc, entry: SquadEntryDoc, role: Role, stats:
     status: entry.status,
     // Solo se envían a los roles que pueden verlas
     stats: canSeeStats(role) ? stats : undefined,
+    // La asistencia a entrenos también cuenta como estadística
+    attendance: canSeeStats(role) ? attendance : undefined,
     guardians: canSeeGuardians(role)
       ? player.guardians.map((g) => ({
           name: g.name,
@@ -169,12 +182,24 @@ router.get<TeamParams>("/", async (req, res) => {
     season._id,
     players.map((p) => p.id)
   );
+  const attendanceByPlayer = await getSeasonAttendance(
+    season._id,
+    players.map((p) => p.id)
+  );
 
   const items = entries
     .flatMap((entry) => {
       const player = players.find((p) => p.id === entry.player.toString());
       return player
-        ? [toSquadItem(player, entry, role, statsByPlayer.get(player.id) ?? emptyStats())]
+        ? [
+            toSquadItem(
+              player,
+              entry,
+              role,
+              statsByPlayer.get(player.id) ?? emptyStats(),
+              attendanceByPlayer.get(player.id) ?? emptyAttendance()
+            ),
+          ]
         : [];
     })
     .sort((a, b) => a.surname.localeCompare(b.surname, "es"));
@@ -241,7 +266,9 @@ router.post<TeamParams>("/", async (req, res) => {
     });
 
     // Un jugador recién creado todavía no tiene partidos
-    return res.status(201).json(toSquadItem(player, entry, role, emptyStats()));
+    return res.status(201).json(
+      toSquadItem(player, entry, role, emptyStats(), emptyAttendance())
+    );
   } catch (err) {
     if (isDuplicateKeyError(err)) {
       return res.status(409).json({ error: "Ese dorsal ya está en uso en esta temporada" });
@@ -335,7 +362,9 @@ router.put<PlayerParams>("/:playerId", async (req, res) => {
 
     const statsByPlayer = await getSeasonStats(season._id, [result.player.id]);
     const stats = statsByPlayer.get(result.player.id) ?? emptyStats();
-    return res.json(toSquadItem(result.player, result.entry, role, stats));
+    const attendanceByPlayer = await getSeasonAttendance(season._id, [result.player.id]);
+    const attendance = attendanceByPlayer.get(result.player.id) ?? emptyAttendance();
+    return res.json(toSquadItem(result.player, result.entry, role, stats, attendance));
   } catch (err) {
     if (isDuplicateKeyError(err)) {
       return res.status(409).json({ error: "Ese dorsal ya está en uso en esta temporada" });

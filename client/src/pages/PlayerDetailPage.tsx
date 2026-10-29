@@ -23,6 +23,7 @@ import {
   canSetStatus,
   licenseLabel,
 } from "../lib/players";
+import AttendanceCard from "../components/AttendanceCard";
 import Flag from "../components/Flag";
 import PlayerForm from "../components/PlayerForm";
 import PlayerNotes from "../components/PlayerNotes";
@@ -347,6 +348,10 @@ function PlayerDetailPage() {
                   ))}
                 </div>
               </section>
+            )}
+
+            {canSeeStats(role) && player.attendance && (
+              <AttendanceCard attendance={player.attendance} />
             )}
 
             <section className="rounded border border-gray-200 p-4">
