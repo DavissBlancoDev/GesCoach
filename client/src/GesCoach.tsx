@@ -11,6 +11,7 @@ import PlayerDetailPage from "./pages/PlayerDetailPage";
 import TrainingsPage from "./pages/TrainingsPage";
 import TrainingDetailPage from "./pages/TrainingDetailPage";
 import MatchesPage from "./pages/MatchesPage";
+import MatchDetailPage from "./pages/MatchDetailPage";
 
 function GesCoach() {
   return (
@@ -30,6 +31,7 @@ function GesCoach() {
             <Route path="/entrenos" element={<TrainingsPage />} />
             <Route path="/entrenos/:trainingId" element={<TrainingDetailPage />} />
             <Route path="/partidos" element={<MatchesPage />} />
+            <Route path="/partidos/:matchId" element={<MatchDetailPage />} />
           </Route>
         </Route>
       </Route>
