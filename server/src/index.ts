@@ -9,6 +9,7 @@ import teamsRouter from "./routes/teams";
 import playersRouter from "./routes/players";
 import playerNotesRouter from "./routes/playerNotes";
 import trainingsRouter from "./routes/trainings";
+import matchesRouter from "./routes/matches";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -19,6 +20,7 @@ app.use(cookieParser());
 app.use("/api/teams/:teamId/players/:playerId/notes", playerNotesRouter);
 app.use("/api/teams/:teamId/players", playersRouter);
 app.use("/api/teams/:teamId/trainings", trainingsRouter);
+app.use("/api/teams/:teamId/matches", matchesRouter);
 
 app.get("/api/health", (_req, res) => {
   const dbConectada = mongoose.connection.readyState === 1;

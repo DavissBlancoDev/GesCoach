@@ -28,6 +28,8 @@ function AppLayout() {
       queryClient.removeQueries({ queryKey: ["playerNotes"] });
       queryClient.removeQueries({ queryKey: ["trainings"] });
       queryClient.removeQueries({ queryKey: ["training"] });
+      queryClient.removeQueries({ queryKey: ["matches"] });
+      queryClient.removeQueries({ queryKey: ["opponents"] });
     },
   });
 
@@ -41,6 +43,9 @@ function AppLayout() {
           <nav className="flex gap-1">
             <NavLink to="/" end className={linkClass}>
               Inicio
+            </NavLink>
+            <NavLink to="/partidos" className={linkClass}>
+              Partidos
             </NavLink>
             <NavLink to="/plantilla" className={linkClass}>
               Plantilla

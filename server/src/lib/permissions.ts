@@ -42,3 +42,21 @@ export const canManageNotes = (role: Role) => role === "head_coach";
 /** Crear y editar entrenos y pasar lista: entrenador principal y segundo entrenador. */
 export const canManageTrainings = (role: Role) =>
   role === "head_coach" || role === "assistant_coach";
+
+/** Programar, editar y borrar partidos: entrenador principal y segundo entrenador. */
+export const canManageMatches = (role: Role) =>
+  role === "head_coach" || role === "assistant_coach";
+
+/**
+ * Cambiar el estado de un partido y su resultado: el cuerpo técnico y el
+ * delegado, que es quien acompaña al equipo en los partidos.
+ */
+export const canRecordMatch = (role: Role) =>
+  role === "head_coach" || role === "assistant_coach" || role === "delegate";
+
+/** Editar la convocatoria: solo el entrenador principal. */
+export const canEditCallup = (role: Role) => role === "head_coach";
+
+/** Ver la convocatoria: cuerpo técnico y delegado. */
+export const canSeeCallup = (role: Role) =>
+  role === "head_coach" || role === "assistant_coach" || role === "delegate";

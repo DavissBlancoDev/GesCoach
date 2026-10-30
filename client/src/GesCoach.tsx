@@ -10,6 +10,7 @@ import AppLayout from "./components/AppLayout";
 import PlayerDetailPage from "./pages/PlayerDetailPage";
 import TrainingsPage from "./pages/TrainingsPage";
 import TrainingDetailPage from "./pages/TrainingDetailPage";
+import MatchesPage from "./pages/MatchesPage";
 
 function GesCoach() {
   return (
@@ -28,6 +29,7 @@ function GesCoach() {
             <Route path="/plantilla/:playerId" element={<PlayerDetailPage />} />
             <Route path="/entrenos" element={<TrainingsPage />} />
             <Route path="/entrenos/:trainingId" element={<TrainingDetailPage />} />
+            <Route path="/partidos" element={<MatchesPage />} />
           </Route>
         </Route>
       </Route>
