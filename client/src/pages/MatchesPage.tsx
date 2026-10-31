@@ -5,7 +5,6 @@ import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { useMatches } from "../hooks/useMatches";
 import { todayIso } from "../lib/trainings";
 import {
-  COMPETITION_LABELS,
   MATCH_STATUS_COLORS,
   MATCH_STATUS_LABELS,
   RESULT_STYLES,
@@ -13,6 +12,7 @@ import {
   VENUE_LABELS,
   byDateAsc,
   canManageMatches,
+  competitionLabel,
   finishedNewestFirst,
   formatMatchDate,
   formatMatchDateShort,
@@ -33,7 +33,15 @@ function VenueIcon({ venue }: { venue: Match["venue"] }) {
 }
 
 /** Último partido, en modo destacado: color según el resultado, marcador grande y los dos equipos. */
-function LastMatchCard({ match, teamName }: { match: Match; teamName: string }) {
+function LastMatchCard({
+  match,
+  teamName,
+  division,
+}: {
+  match: Match;
+  teamName: string;
+  division: string;
+}) {
   const style = match.result ? RESULT_STYLES[match.result] : undefined;
   const { left, right } = sidesOf(match, teamName);
 
@@ -44,7 +52,7 @@ function LastMatchCard({ match, teamName }: { match: Match; teamName: string }) 
     >
       <div className="flex items-center justify-between gap-2 text-sm text-gray-700">
         <span>
-          {COMPETITION_LABELS[match.competition]} · {formatMatchDate(match.date)}
+          {competitionLabel(match.competition, division)} · {formatMatchDate(match.date)}
         </span>
         <span className="flex items-center gap-1">
           <VenueIcon venue={match.venue} />
@@ -69,7 +77,15 @@ function LastMatchCard({ match, teamName }: { match: Match; teamName: string }) 
 }
 
 /** Próximo partido (o el que se está jugando): fecha, hora, sede y convocatoria. */
-function NextMatchCard({ match, teamName }: { match: Match; teamName: string }) {
+function NextMatchCard({
+  match,
+  teamName,
+  division,
+}: {
+  match: Match;
+  teamName: string;
+  division: string;
+}) {
   const playing = match.status === "playing";
   const overdue = match.status === "pending" && match.date.slice(0, 10) < todayIso();
   const { left, right } = sidesOf(match, teamName);
@@ -81,7 +97,7 @@ function NextMatchCard({ match, teamName }: { match: Match; teamName: string }) 
       className="block rounded border border-gray-200 p-4 hover:bg-gray-50"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm text-gray-600">{COMPETITION_LABELS[match.competition]}</span>
+        <span className="text-sm text-gray-600">{competitionLabel(match.competition, division)}</span>
         <span className={`rounded px-2 py-0.5 text-xs ${MATCH_STATUS_COLORS[match.status]}`}>
           {playing ? "En juego" : MATCH_STATUS_LABELS[match.status]}
         </span>
@@ -136,7 +152,7 @@ function RecentRow({ match }: { match: Match }) {
 }
 
 /** Fila del listado completo de partidos. */
-function MatchRow({ match }: { match: Match }) {
+function MatchRow({ match, division }: { match: Match; division: string }) {
   const style = match.result ? RESULT_STYLES[match.result] : undefined;
 
   return (
@@ -150,7 +166,7 @@ function MatchRow({ match }: { match: Match }) {
           <p className="truncate font-medium">{match.opponent.name}</p>
           <p className="text-xs text-gray-600">
             {formatMatchDateShort(match.date)} · {matchTimeLabel(match)} ·{" "}
-            {COMPETITION_LABELS[match.competition]}
+            {competitionLabel(match.competition, division)}
           </p>
         </div>
         {match.status === "pending" ? (
@@ -192,6 +208,7 @@ function MatchesPage() {
   if (!current || !current.team || !current.currentSeason) return <p className="p-6">Cargando...</p>;
 
   const team = current.team;
+  const division = current.currentSeason.division;
   const canManage = canManageMatches(current.role);
 
   const finished = matches ? finishedNewestFirst(matches) : [];
@@ -232,7 +249,7 @@ function MatchesPage() {
           <section className="mb-6">
             <h2 className="mb-2 text-lg font-semibold">Último partido</h2>
             {last ? (
-              <LastMatchCard match={last} teamName={team.name} />
+              <LastMatchCard match={last} teamName={team.name} division={division} />
             ) : (
               <p className="rounded border border-dashed border-gray-300 p-4 text-sm text-gray-600">
                 Aún no has jugado ningún partido esta temporada.
@@ -243,7 +260,7 @@ function MatchesPage() {
           <section className="mb-6">
             <h2 className="mb-2 text-lg font-semibold">Próximo partido</h2>
             {next ? (
-              <NextMatchCard match={next} teamName={team.name} />
+              <NextMatchCard match={next} teamName={team.name} division={division} />
             ) : (
               <div className="rounded border border-dashed border-gray-300 p-4 text-center">
                 <p className="text-gray-600">No hay partidos programados</p>
@@ -270,7 +287,7 @@ function MatchesPage() {
             ) : (
               <ul className="space-y-2">
                 {all.map((m) => (
-                  <MatchRow key={m.id} match={m} />
+                  <MatchRow key={m.id} match={m} division={division} />
                 ))}
               </ul>
             )}

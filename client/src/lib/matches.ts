@@ -14,6 +14,15 @@ export const COMPETITION_LABELS: Record<MatchCompetition, string> = {
   friendly: "Amistoso",
 };
 
+/**
+ * Nombre de un tipo de partido para mostrar. La liga se muestra con la
+ * división del equipo en esa temporada (por ejemplo "3ª Futgal, Santiago,
+ * Grupo 2") en lugar de "Liga" a secas. Si no se indica la división, se usa
+ * el nombre genérico.
+ */
+export const competitionLabel = (competition: MatchCompetition, division?: string) =>
+  competition === "league" && division ? division : COMPETITION_LABELS[competition];
+
 export const VENUE_LABELS: Record<MatchVenue, string> = {
   home: "En casa",
   away: "Fuera",
@@ -23,7 +32,7 @@ export const VENUE_LABELS: Record<MatchVenue, string> = {
 // Emoji de la sede: casa, fuera y campo neutral
 export const VENUE_ICONS: Record<MatchVenue, string> = {
   home: "🏠",
-  away: "🚌",
+  away: "✈️",
   neutral: "🏟️",
 };
 

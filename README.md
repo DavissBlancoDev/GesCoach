@@ -30,14 +30,13 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 
 ### 🔨 En curso
 
-_Nada en curso en este momento._
+- [ ] 📝 Partidos: convocatoria (con límite según la competición), alineación por formaciones y acta
 
 ### 🔮 Previsto
 
 - [ ] 🏁 Finalizar temporada y consulta del histórico
 - [ ] 🏆 Competiciones, equipos rivales, calendario y clasificación calculada
 - [ ] 📄 Importación de jornadas desde los PDF de la federación, con vista previa antes de guardar
-- [ ] 📝 Partidos: convocatoria (con límite según la competición), alineación por formaciones y acta
 - [ ] 📅 Calendario mensual
 - [ ] 📊 Estadísticas de jugadores y de equipo
 - [ ] 🏠 Dashboard: próximo partido, próximo entreno, disponibilidad y riesgo de sanción

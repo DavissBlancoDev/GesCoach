@@ -11,7 +11,6 @@ import {
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { useMatches } from "../hooks/useMatches";
 import {
-  COMPETITION_LABELS,
   MATCH_STATUS_COLORS,
   MATCH_STATUS_LABELS,
   RESULT_STYLES,
@@ -20,6 +19,7 @@ import {
   canEditCallup,
   canManageMatches,
   canRecordMatch,
+  competitionLabel,
   formatMatchDate,
   matchTimeLabel,
 } from "../lib/matches";
@@ -191,7 +191,8 @@ function MatchDetailPage() {
               : `${team.name} - ${match.opponent.name}`}
           </h1>
           <p className="mt-1 text-gray-700">
-            {COMPETITION_LABELS[match.competition]} · {formatMatchDate(match.date)} ·{" "}
+            {competitionLabel(match.competition, current.currentSeason.division)} ·{" "}
+            {formatMatchDate(match.date)} ·{" "}
             {matchTimeLabel(match)}
           </p>
           <p className="text-gray-600">

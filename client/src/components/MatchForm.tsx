@@ -10,7 +10,7 @@ import {
 } from "../api/matches";
 import { getFieldErrors } from "../api/client";
 import { useOpponents } from "../hooks/useMatches";
-import { COMPETITION_LABELS, VENUE_LABELS } from "../lib/matches";
+import { COMPETITION_LABELS, VENUE_LABELS, competitionLabel } from "../lib/matches";
 import DateSelect from "./DateSelect";
 import FormField from "./FormField";
 import FormSelect from "./FormSelect";
@@ -94,10 +94,7 @@ function MatchForm({ teamId, division, defaultFieldName, match, onDone }: MatchF
   }
 
   const competitionOptions = (Object.keys(COMPETITION_LABELS) as MatchCompetition[]).map(
-    (value) => ({
-      value,
-      label: value === "league" && division ? `Liga · ${division}` : COMPETITION_LABELS[value],
-    })
+    (value) => ({ value, label: competitionLabel(value, division) })
   );
   const venueOptions = (Object.keys(VENUE_LABELS) as MatchVenue[]).map((value) => ({
     value,
