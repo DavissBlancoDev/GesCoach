@@ -48,7 +48,7 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 ## 🛠️ Stack
 
 | Parte | Tecnología |
-|---|---|
+| --- | --- |
 | 🎨 Cliente | React, TypeScript, Vite, React Router, TanStack Query, Tailwind CSS |
 | ⚙️ Servidor | Node.js, Express, TypeScript |
 | 🍃 Base de datos | MongoDB (Atlas) con Mongoose |
@@ -62,7 +62,7 @@ Detalle de las herramientas y librerías del proyecto, y para qué se usa cada u
 ### 🎨 Cliente
 
 | Tecnología | Para qué se usa |
-|---|---|
+| --- | --- |
 | React | Interfaz basada en componentes |
 | TypeScript | Tipado estático: los errores se detectan al escribir, antes de ejecutar |
 | Vite | Servidor de desarrollo con recarga en caliente, empaquetado y proxy hacia la API |
@@ -73,7 +73,7 @@ Detalle de las herramientas y librerías del proyecto, y para qué se usa cada u
 ### ⚙️ Servidor
 
 | Tecnología | Para qué se usa |
-|---|---|
+| --- | --- |
 | Node.js | Entorno de ejecución |
 | Express | API REST: rutas, middlewares y control de acceso |
 | TypeScript | Tipado estático, compartido con el cliente en los conceptos de dominio |
@@ -88,14 +88,14 @@ Detalle de las herramientas y librerías del proyecto, y para qué se usa cada u
 ### 🍃 Base de datos
 
 | Tecnología | Para qué se usa |
-|---|---|
+| --- | --- |
 | MongoDB Atlas | Base de datos documental en la nube (plan gratuito) |
 | Mongoose | Modelos, validación, índices únicos y transacciones |
 
 ### 🧪 Herramientas de desarrollo
 
 | Herramienta | Para qué se usa |
-|---|---|
+| --- | --- |
 | pnpm | Gestor de paquetes. Espera antes de instalar versiones recién publicadas y bloquea por defecto los scripts de instalación |
 | ESLint | Análisis estático del código |
 | Git y GitHub | Control de versiones y alojamiento del repositorio |
@@ -141,7 +141,7 @@ cd ../client && pnpm install --frozen-lockfile
 Crea `server/.env` a partir de `server/.env.example`:
 
 | Variable | Descripción |
-|---|---|
+| --- | --- |
 | `PORT` | Puerto de la API (por defecto, 3000) |
 | `MONGODB_URI` | Cadena de conexión de MongoDB, **incluyendo el nombre de la base de datos** (por ejemplo `/gescoach` antes del `?`) |
 | `JWT_SECRET` | Secreto largo y aleatorio para firmar los tokens |
@@ -175,7 +175,7 @@ Vite redirige las peticiones de `/api` al servidor, así que el cliente usa ruta
 ## 🔌 API
 
 | Método | Ruta | Descripción |
-|---|---|---|
+| --- | --- | --- |
 | GET | `/api/health` | Estado de la API y de la base de datos |
 | POST | `/api/auth/register` | Crea una cuenta |
 | POST | `/api/auth/login` | Inicia sesión (cookie `httpOnly`) |
