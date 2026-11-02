@@ -37,6 +37,7 @@ export interface Season {
   division: string;
   matchDuration: number;
   isCurrent: boolean;
+  yellowCardsLimit?: number;
 }
 
 // Un equipo del usuario, con su rol y su temporada actual
@@ -69,5 +70,12 @@ export const getMyTeams = () => api<MyTeam[]>("/teams/mine");
 export const createTeam = (data: CreateTeamData) =>
   api<{ team: Team; season: Season }>("/teams", {
     method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  /** Cambia los ajustes de la temporada actual (solo el entrenador principal). */
+export const updateSeasonSettings = (teamId: string, data: { yellowCardsLimit: number }) =>
+  api<{ id: string; yellowCardsLimit: number }>(`/teams/${teamId}/season/settings`, {
+    method: "PATCH",
     body: JSON.stringify(data),
   });

@@ -60,3 +60,6 @@ export const canEditCallup = (role: Role) => role === "head_coach";
 /** Ver la convocatoria: cuerpo técnico y delegado. */
 export const canSeeCallup = (role: Role) =>
   role === "head_coach" || role === "assistant_coach" || role === "delegate";
+
+/** Editar el equipo y los ajustes de la temporada: solo el entrenador principal. */
+export const canEditTeam = (role: Role) => role === "head_coach";
