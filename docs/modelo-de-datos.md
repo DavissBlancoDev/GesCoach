@@ -25,6 +25,10 @@ erDiagram
     TRAINING ||--o{ ATTENDANCE : "registra"
     PLAYER ||--o{ ATTENDANCE : "tiene"
     PLAYER ||--o{ PLAYER_NOTE : "tiene"
+    TEAM ||--o{ OPPONENT : "tiene"
+    SEASON ||--o{ MATCH : "incluye"
+    OPPONENT ||--o{ MATCH : "es rival en"
+    MATCH }o--o{ PLAYER : "convoca"
 ```
 
 ## Entidades implementadas
@@ -36,7 +40,7 @@ Todas incluyen `createdAt` y `updatedAt`, generados automáticamente.
 La persona que inicia sesión.
 
 | Campo | Tipo | Notas |
-|---|---|---|
+| --- | --- | --- |
 | `email` | texto | Obligatorio, único, en minúsculas |
 | `name` | texto | Obligatorio |
 | `surname` | texto | Obligatorio |
@@ -51,7 +55,7 @@ Calculado: `age`.
 El equipo como entidad continua entre temporadas.
 
 | Campo | Tipo | Notas |
-|---|---|---|
+| --- | --- | --- |
 | `name` | texto | Obligatorio, máximo 60 caracteres |
 | `primaryColor` | texto | Color hexadecimal, por ejemplo `#1d4ed8` |
 | `secondaryColor` | texto | Color hexadecimal |
@@ -67,7 +71,7 @@ El campo local es texto simple. Cuando se importen los calendarios de la federac
 Una temporada de un equipo. Aquí viven los datos que cambian cada año.
 
 | Campo | Tipo | Notas |
-|---|---|---|
+| --- | --- | --- |
 | `team` | referencia a Team | Obligatorio |
 | `startYear` | número | `2026` significa la temporada 2026/2027 |
 | `category` | lista cerrada | `prebenjamin`, `benjamin`, `alevin`, `infantil`, `cadete`, `juvenil` |
@@ -84,7 +88,7 @@ Restricción: un índice único parcial impide tener dos temporadas actuales en 
 Relaciona un usuario con un equipo y le asigna un rol. Ver [roles y permisos](./roles-y-permisos.md).
 
 | Campo | Tipo | Notas |
-|---|---|---|
+| --- | --- | --- |
 | `user` | referencia a User | Obligatorio |
 | `team` | referencia a Team | Obligatorio |
 | `role` | lista cerrada | `head_coach`, `assistant_coach`, `delegate`, `team_manager`, `medical` |
@@ -99,7 +103,7 @@ Restricciones:
 El jugador como **persona**. No cambia al cambiar de temporada.
 
 | Campo | Tipo | Notas |
-|---|---|---|
+| --- | --- | --- |
 | `team` | referencia a Team | Obligatorio |
 | `name` | texto | Obligatorio |
 | `surname` | texto | Obligatorio |
@@ -112,7 +116,7 @@ El jugador como **persona**. No cambia al cambiar de temporada.
 Cada elemento de `guardians`:
 
 | Campo | Notas |
-|---|---|
+| --- | --- |
 | `name` | Obligatorio |
 | `relationship` | Obligatorio, texto libre (madre, padre, tutor...) |
 | `phone` | Opcional |
@@ -121,7 +125,7 @@ Cada elemento de `guardians`:
 El objeto `contract`:
 
 | Campo | Notas |
-|---|---|
+| --- | --- |
 | `endDate` | Obligatoria si hay contrato |
 | `startDate` | Opcional |
 | `salary` | Opcional, en euros |
@@ -136,7 +140,7 @@ Calculados: `age` y `yearsLeft` (años de contrato que quedan).
 El jugador **dentro de la plantilla de una temporada**. Al finalizar la temporada estos documentos se conservan como histórico.
 
 | Campo | Tipo | Notas |
-|---|---|---|
+| --- | --- | --- |
 | `player` | referencia a Player | Obligatorio |
 | `season` | referencia a Season | Obligatorio |
 | `licenseCategory` | lista cerrada | Tipo de ficha en esa temporada. Mismas categorías que Season |
@@ -160,7 +164,7 @@ El estado guarda solo la situación del jugador, sin detalles clínicos.
 Notas del entrenador sobre un jugador, en forma de lista de entradas con fecha y no como un único campo de texto.
 
 | Campo | Tipo | Notas |
-|---|---|---|
+| --- | --- | --- |
 | `team` | referencia a Team | Se guarda también el equipo para filtrar siempre por él |
 | `player` | referencia a Player | La persona, no la temporada, para que el seguimiento se conserve entre temporadas |
 | `author` | referencia a User | Quien la escribió |
@@ -178,7 +182,7 @@ Reglas:
 Un entreno de una temporada.
 
 | Campo | Tipo | Notas |
-|---|---|---|
+| --- | --- | --- |
 | `team` | referencia a Team | Obligatorio |
 | `season` | referencia a Season | Obligatorio |
 | `date` | fecha | Obligatoria. Se guarda a medianoche UTC, igual que las fechas de nacimiento |
@@ -195,7 +199,7 @@ El estado `held` lo pone el servidor al guardar la lista de asistencia, y no se 
 La asistencia de un jugador a un entreno. Hay un registro por jugador y entreno.
 
 | Campo | Tipo | Notas |
-|---|---|---|
+| --- | --- | --- |
 | `training` | referencia a Training | Obligatorio |
 | `player` | referencia a Player | Obligatorio |
 | `status` | lista cerrada | `present`, `justified_absence` o `unjustified_absence` |
@@ -203,7 +207,7 @@ La asistencia de un jugador a un entreno. Hay un registro por jugador y entreno.
 Al pasar lista, cada jugador se marca con uno de **tres estados**:
 
 | Estado | Botón | Cuenta como |
-|---|---|---|
+| --- | --- | --- |
 | Asiste | Verde | Asistencia |
 | Ausencia justificada | Naranja | Lesión u otra falta que el entrenador considere justificada |
 | Ausencia injustificada | Rojo | Falta sin justificar |
@@ -219,12 +223,68 @@ Reglas:
 - **Los entrenos suspendidos no cuentan** y en ellos no se puede pasar lista.
 - Si un jugador está marcado como lesionado en la plantilla, la lista sugiere la ausencia justificada, pero nunca la aplica sola.
 
+### Opponent
+
+Un equipo rival. Es una entidad propia de cada equipo, reutilizable en todos los partidos contra él.
+
+| Campo | Tipo | Notas |
+| --- | --- | --- |
+| `team` | referencia a Team | Obligatorio |
+| `name` | texto | Obligatorio, máximo 80 caracteres |
+| `normalizedName` | texto | El nombre sin tildes, en minúsculas y con un solo espacio entre palabras |
+
+Con `team`, `normalizedName` forma un índice único. Al programar un partido el rival se busca por ese nombre normalizado y, si no existe, se crea, en una única operación atómica: así no se duplica un rival escrito de formas distintas ni aunque lleguen dos peticiones a la vez. Más adelante tendrá escudo y nombres alternativos, para reconocerlo al importar los PDF de la federación.
+
+### Match
+
+Un partido de la temporada.
+
+| Campo | Tipo | Notas |
+| --- | --- | --- |
+| `team` | referencia a Team | Obligatorio |
+| `season` | referencia a Season | Obligatorio |
+| `opponent` | referencia a Opponent | Obligatorio |
+| `competition` | lista cerrada | `league`, `cup`, `tournament` o `friendly`. Más adelante la liga se vinculará a su competición |
+| `venue` | lista cerrada | `home`, `away` o `neutral`, desde nuestro punto de vista |
+| `date` | fecha | Obligatoria. Se guarda a medianoche UTC |
+| `time` | texto | Opcional, `HH:MM`. Sin hora, el partido queda "por confirmar" |
+| `city` | texto | Opcional |
+| `fieldName` | texto | Opcional. Al programar en casa se propone el campo local. De momento es texto; pasará a ser una entidad propia |
+| `observations` | texto | Opcional, máximo 1.000 caracteres |
+| `status` | lista cerrada | `pending`, `playing` o `finished` |
+| `goalsFor` | número 0-99 | Goles a favor. Solo existe desde que empieza el partido |
+| `goalsAgainst` | número 0-99 | Goles en contra. Igual |
+| `callup` | lista | Convocados. Cada uno es un subdocumento con su `player`, para poder añadirle después el dorsal de ese partido |
+
+El resultado se guarda **desde nuestra perspectiva**, sea cual sea la sede. De ahí se calcula si fue victoria, empate o derrota. Las pantallas lo muestran en el orden en que se anuncia el partido: en casa y en campo neutral va primero nuestro equipo, y fuera va primero el rival.
+
+Estados y transiciones permitidas:
+
+| Desde | Puede pasar a |
+| --- | --- |
+| Pendiente | Jugando |
+| Jugando | Pendiente (solo si sigue 0-0) y Finalizado |
+| Finalizado | Jugando (para reabrirlo y corregir el resultado) |
+
+Reglas:
+
+- Al empezar el partido, el marcador arranca en 0-0.
+- El resultado solo se puede cambiar mientras el partido está en juego. Para corregir uno finalizado, se reabre.
+- Volver a pendiente borra el marcador, por eso solo se permite si está 0-0, para no perder goles sin querer.
+
+Reglas de la convocatoria:
+
+- Solo se puede cambiar con el partido **pendiente**, y solo la edita el entrenador principal.
+- Los jugadores deben ser de la plantilla de la temporada del partido.
+- Los que se añaden de nuevo deben estar **disponibles**. Un convocado que después se lesiona se mantiene.
+- El máximo lo fija el tipo de partido: **16 en liga** y sin límite en copa, torneo y amistoso. La regla está en el servidor (`lib/competitions.ts`) y viaja con cada partido como `maxCallup`.
+
 ## Posiciones
 
 Se guarda la posición concreta. El grupo se deduce de ella con una tabla en el código, de modo que no pueden contradecirse.
 
 | Grupo | Posiciones (clave) |
-|---|---|
+| --- | --- |
 | Portero | `portero` |
 | Defensas | `central`, `lateral_izquierdo`, `lateral_derecho`, `carrilero_izquierdo`, `carrilero_derecho`, `libero` |
 | Centrocampistas | `pivote`, `mediapunta`, `interior_derecho`, `interior_izquierdo`, `mediocentro` |
@@ -235,7 +295,7 @@ La abreviatura que se muestra en la plantilla (por ejemplo `ED` para extremo der
 ## Datos guardados y datos calculados
 
 | Valor | Cómo se obtiene |
-|---|---|
+| --- | --- |
 | Edad (usuario y jugador) | Desde `birthDate`, a fecha de hoy |
 | Años de contrato restantes | Desde `contract.endDate`, a fecha de hoy |
 | Grupo de posición | Tabla de posiciones |
@@ -243,6 +303,7 @@ La abreviatura que se muestra en la plantilla (por ejemplo `ED` para extremo der
 | Categoría y modalidad para mostrar | Tablas de etiquetas en el cliente |
 | Clasificación *(previsto)* | Desde los resultados de los partidos |
 | Porcentajes de asistencia a entrenos | Desde los registros de asistencia de cada entreno |
+| Resultado de un partido (victoria, empate o derrota) | Desde los goles a favor y en contra |
 | Estadísticas de jugadores y equipo *(previsto)* | Desde las actas de los partidos |
 
 ## Previsto
@@ -255,8 +316,7 @@ erDiagram
     SEASON ||--o{ COMPETITION : "incluye"
     COMPETITION ||--o{ MATCH : "contiene"
     FIELD ||--o{ MATCH : "acoge"
-    MATCH ||--o| CALLUP : "tiene"
-    CALLUP ||--o| LINEUP : "origina"
+    MATCH ||--o| LINEUP : "origina"
     MATCH ||--o| MATCH_REPORT : "genera"
 ```
 
@@ -265,7 +325,7 @@ erDiagram
 Permite a quien creó el equipo invitar a otros miembros mediante un enlace.
 
 | Campo | Notas |
-|---|---|
+| --- | --- |
 | `team` | Equipo al que se invita |
 | `role` | Rol que tendrá quien acepte. Nunca `head_coach` |
 | `tokenHash` | Hash del token. El token en claro solo existe en el enlace |
@@ -282,22 +342,14 @@ Agrupa las reglas de una competición dentro de una temporada: liga, copa, torne
 - Máximo de convocados (por ejemplo, 16 en liga; sin límite en amistosos, copa o torneo).
 - Duración del partido.
 - Si cuenta para la clasificación.
-- Equipos rivales participantes, reutilizables entre competiciones.
-
-### Match
-
-Un partido dentro de una competición, con jornada, equipo local y visitante, campo, fecha y hora (la hora puede estar pendiente de confirmar) y resultado. El resultado puede ser provisional hasta que llegue el acta.
-
-Ciclo de vida: programado, convocatoria, alineación y acta.
+- Equipos rivales participantes (ya existen como entidad Opponent, reutilizable entre competiciones).
 
 ### Field
 
 Entidad propia para los campos, porque un mismo campo lo usan varios equipos y puede escribirse de formas distintas según la fuente.
 
+### Lineup y MatchReport
 
-### Callup, Lineup y MatchReport
-
-- **Callup (convocatoria):** jugadores convocados, respetando el máximo de la competición. Aquí se guarda el cambio puntual de dorsal de un partido.
+- **Convocatoria:** ya implementada dentro del partido (ver Match). Falta el cambio puntual de dorsal de un partido, que se guardará en cada elemento de la convocatoria.
 - **Lineup (alineación):** formación elegida (depende de la modalidad), once inicial y suplentes. Los titulares salen de los convocados.
 - **MatchReport (acta):** goleadores, asistentes, tarjetas y cambios. De ella salen los minutos, goles, asistencias y tarjetas de cada jugador.
-

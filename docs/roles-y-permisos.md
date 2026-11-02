@@ -5,7 +5,7 @@ Este documento recoge qué roles existen en un equipo, qué puede hacer cada uno
 ## Estado actual
 
 | Parte | Estado |
-|---|---|
+| --- | --- |
 | Los cinco roles existen en el modelo | Implementado |
 | Un único `head_coach` por equipo | Implementado |
 | Comprobación de pertenencia al equipo | Implementado |
@@ -13,6 +13,7 @@ Este documento recoge qué roles existen en un equipo, qué puede hacer cada uno
 | Editar jugadores y cambiar su estado | Implementado |
 | Notas del entrenador sobre los jugadores | Implementado |
 | Entrenos y pase de lista | Implementado |
+| Partidos, resultado y convocatoria | Implementado |
 | Invitar a otros miembros | Previsto |
 | Permisos del resto de funciones (convocatoria, acta, estadísticas...) | Diseñado, a medida que se construya cada función |
 
@@ -23,7 +24,7 @@ Hoy solo existe el rol `head_coach`, porque quien crea el equipo lo recibe autom
 El rol se guarda en la **membresía** (la relación entre usuario y equipo), no en el usuario. Así una misma cuenta puede ser entrenador en un equipo y responsable en otro.
 
 | Rol | Clave | Quién es |
-|---|---|---|
+| --- | --- | --- |
 | Entrenador principal | `head_coach` | Quien crea el equipo. Gestiona todo y es el único que invita |
 | Segundo entrenador | `assistant_coach` | Cuerpo técnico con acceso amplio, sin gestión del equipo ni de miembros |
 | Delegado | `delegate` | La persona que acompaña al equipo en los partidos |
@@ -41,12 +42,14 @@ Reglas:
 Es el diseño acordado. Las filas marcadas como *implementado* ya se comprueban en el servidor; el resto se aplicará al construir cada función.
 
 | Función | Entrenador | 2º entrenador | Delegado | Responsable | Médico |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | Ver plantilla, calendario y partidos | Sí | Sí | Sí | Sí | Sí |
 | Editar plantilla *(implementado)* | Sí | Sí | No | No | No |
 | Crear entrenos y pasar lista *(implementado)* | Sí | Sí | No | No | No |
-| **Editar convocatoria y alineación** | **Sí** | No | No | No | No |
-| Ver convocatoria y alineación | Sí | Sí | Sí | No | No |
+| **Editar convocatoria** *(implementado)* **y alineación** | **Sí** | No | No | No | No |
+| Ver convocatoria *(implementado)* y alineación | Sí | Sí | Sí | No | No |
+| Programar, editar y borrar partidos *(implementado)* | Sí | Sí | No | No | No |
+| Cambiar el estado y el resultado de un partido *(implementado)* | Sí | Sí | Sí | No | No |
 | Registrar el acta | Sí | Sí | Sí | No | No |
 | Ver estadísticas | Sí | Sí | Sí | Sí | No |
 | Cambiar el estado de un jugador *(implementado)* | Sí | Sí | No | No | Solo disponible ↔ lesionado |
@@ -61,7 +64,7 @@ Una consecuencia de este diseño: el delegado puede registrar el acta, pero no p
 Algunos datos de los jugadores solo los ven determinados roles. **El filtrado se hace en el servidor**: lo que el servidor no envía no se puede ver, ni siquiera inspeccionando las peticiones del navegador.
 
 | Dato | Entrenador | 2º entrenador | Delegado | Responsable | Médico |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | Contrato y sueldo *(implementado)* | Sí | No | No | No | No |
 | Contacto de tutores *(implementado)* | Sí | Sí | Sí | No | No |
 | Notas del entrenador *(implementado)* | Sí | No | No | No | No |
@@ -80,6 +83,8 @@ Notas:
 - **Editar sustituye los datos**: los campos opcionales que no se envían (nacionalidad, dorsal, nombre futbolístico, tutores) se borran. Es lo que permite vaciarlos desde el formulario.
 - **Entrenos y asistencia.** Crear, editar, suspender y borrar entrenos y pasar lista lo hacen el entrenador principal y el segundo entrenador. La lista de jugadores de un entreno y el recuento de asistencia solo se envían a quienes pueden ver estadísticas, así que el médico no los recibe. El delegado y el responsable los ven en solo lectura.
 - **Notas.** Solo el entrenador principal. Cualquier otro rol recibe `403`.
+- **Partidos.** Programar, editar y borrar partidos lo hacen el entrenador principal y el segundo entrenador. Cambiar el estado y el resultado también lo puede hacer el delegado, que es quien acompaña al equipo en los partidos. Todos los roles ven los partidos.
+- **Convocatoria.** Solo la edita el entrenador principal, y solo con el partido pendiente. Solo se envía a quienes pueden verla (entrenador principal, segundo entrenador y delegado). Los jugadores que se añaden deben estar disponibles; un convocado que después se lesiona se mantiene, y el cliente lo avisa.
 
 ## Cómo se aplican
 
@@ -90,6 +95,12 @@ Los permisos están en un **único archivo del servidor** (`server/src/lib/permi
 - `canSeeGuardians(role)`: quién ve el contacto de tutores.
 - `canSeeStats(role)`: quién ve las estadísticas (todos menos el médico).
 - `canSetStatus(role, from, to)`: quién puede cambiar un jugador de un estado a otro.
+- `canManageTrainings(role)`: quién crea y edita entrenos y pasa lista.
+- `canManageNotes(role)`: quién ve y escribe notas (solo el entrenador principal).
+- `canManageMatches(role)`: quién programa, edita y borra partidos.
+- `canRecordMatch(role)`: quién cambia el estado y el resultado de un partido.
+- `canEditCallup(role)`: quién edita la convocatoria.
+- `canSeeCallup(role)`: quién ve la convocatoria.
 
 Cambiar un permiso es editar ese archivo. Los permisos no se guardan en la base de datos: solo se guarda el rol.
 
@@ -103,7 +114,7 @@ El flujo de una petición a una ruta de equipo (`/api/teams/:teamId/...`) es:
 ### Códigos de respuesta
 
 | Código | Cuándo |
-|---|---|
+| --- | --- |
 | `401` | No hay sesión o es inválida |
 | `404` | El equipo no existe **o el usuario no pertenece a él** |
 | `403` | Pertenece al equipo pero su rol no permite la acción |

@@ -27,16 +27,21 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [x] 🔤 Letra de la ficha del jugador (por ejemplo, Infantil C)
 - [x] 🗒️ Notas del entrenador sobre cada jugador (solo entrenador principal)
 - [x] 🏃 Entrenos: crear, pasar lista con tres estados y porcentajes de asistencia en la ficha del jugador
+- [x] ⚽ Partidos programados a mano: tipo (liga, copa, torneo o amistoso), rival, sede, fecha, hora opcional y lugar
+- [x] 🔄 Estados del partido (pendiente, jugando y finalizado) y resultado en directo
+- [x] 📋 Convocatoria agrupada por posiciones, con el máximo de 16 en liga
+- [x] 📊 Pantalla de partidos: último partido, próximo, recientes con color según el resultado y listado completo
 
 ### 🔨 En curso
 
-- [ ] 📝 Partidos: convocatoria (con límite según la competición), alineación por formaciones y acta
+_Nada en curso en este momento._
 
 ### 🔮 Previsto
 
 - [ ] 🏁 Finalizar temporada y consulta del histórico
-- [ ] 🏆 Competiciones, equipos rivales, calendario y clasificación calculada
+- [ ] 🏆 Competiciones con su calendario de jornadas y clasificación calculada
 - [ ] 📄 Importación de jornadas desde los PDF de la federación, con vista previa antes de guardar
+- [ ] 📝 Alineación por formaciones y acta del partido (goleadores, asistentes, tarjetas y cambios)
 - [ ] 📅 Calendario mensual
 - [ ] 📊 Estadísticas de jugadores y de equipo
 - [ ] 🏠 Dashboard: próximo partido, próximo entreno, disponibilidad y riesgo de sanción
@@ -111,12 +116,14 @@ Detalle de las herramientas y librerías del proyecto, y para qué se usa cada u
 
 ## 📁 Estructura del repositorio
 
+<!-- markdownlint-disable MD040 -->
 ```
 gescoach/
 ├── client/   # Aplicación React
 ├── server/   # API REST con Express
 └── docs/     # Modelo de datos y roles y permisos
 ```
+<!-- markdownlint-enable MD040 -->
 
 ## 🚀 Puesta en marcha
 
@@ -199,6 +206,15 @@ Vite redirige las peticiones de `/api` al servidor, así que el cliente usa ruta
 | PATCH | `/api/teams/:teamId/trainings/:trainingId/status` | Suspende un entreno o lo vuelve a programar |
 | PUT | `/api/teams/:teamId/trainings/:trainingId/attendance` | Guarda la lista de asistencia |
 | DELETE | `/api/teams/:teamId/trainings/:trainingId` | Borra un entreno y su asistencia |
+| GET | `/api/teams/:teamId/matches` | Partidos de la temporada actual |
+| GET | `/api/teams/:teamId/matches/opponents` | Rivales ya usados, para sugerirlos en el formulario |
+| POST | `/api/teams/:teamId/matches` | Programa un partido |
+| GET | `/api/teams/:teamId/matches/:matchId` | Un partido |
+| PUT | `/api/teams/:teamId/matches/:matchId` | Edita los datos de un partido |
+| PATCH | `/api/teams/:teamId/matches/:matchId/status` | Cambia el estado (pendiente, jugando o finalizado) |
+| PATCH | `/api/teams/:teamId/matches/:matchId/score` | Cambia el resultado (solo mientras se juega) |
+| PUT | `/api/teams/:teamId/matches/:matchId/callup` | Guarda la convocatoria (solo con el partido pendiente) |
+| DELETE | `/api/teams/:teamId/matches/:matchId` | Borra un partido |
 
 ## 🧠 Decisiones de diseño
 
@@ -211,6 +227,9 @@ Más detalle en [Modelo de datos](./docs/modelo-de-datos.md) y [Roles y permisos
 - 🎯 **Posiciones como datos.** Se guarda la posición concreta y el grupo (portero, defensa, centrocampista, atacante) se deduce de ella, de modo que no pueden contradecirse.
 - 🎭 **Roles en la membresía.** El rol pertenece a la relación entre persona y equipo, no a la persona: la misma cuenta puede tener roles distintos en equipos distintos. Los permisos de cada rol se definen en un único archivo.
 - 👀 **Importación con vista previa.** Los datos de la federación se importarán desde PDF subidos por el usuario, mostrando lo interpretado antes de guardar, y la clasificación calculada se contrastará con la oficial.
+- ⚽ **El resultado se guarda desde nuestra perspectiva** (goles a favor y en contra), sea cual sea la sede. La victoria, el empate o la derrota se calculan a partir de ahí, y los marcadores se muestran en el orden en que se anuncian.
+- 🛡️ **El rival es una entidad propia.** Se escribe como texto al programar el partido y el servidor lo reutiliza si ya existe, aunque cambien las mayúsculas, las tildes o los espacios. Así no habrá que migrar nada cuando lleguen los escudos y la importación de los PDF.
+- 📏 **Las reglas de la competición viven en el servidor.** El máximo de convocados (16 en liga, sin límite en copa, torneo y amistoso) no está repartido por las pantallas: el servidor lo comprueba y lo envía con cada partido.
 
 ## 🔒 Seguridad y privacidad
 
