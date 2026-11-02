@@ -47,6 +47,9 @@ function AppLayout() {
             <NavLink to="/partidos" className={linkClass}>
               Partidos
             </NavLink>
+            <NavLink to="/calendario" className={linkClass}>
+              Calendario
+            </NavLink>
             <NavLink to="/plantilla" className={linkClass}>
               Plantilla
             </NavLink>
