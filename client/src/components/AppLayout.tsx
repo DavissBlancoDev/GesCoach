@@ -1,7 +1,6 @@
-import { NavLink, Outlet } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { logout } from "../api/auth";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
+import { useLogout } from "../hooks/useLogout";
 
 // Estilo de cada enlace según esté activo o no
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -10,45 +9,38 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 /**
- * Estructura común de las pantallas con sesión y equipo: cabecera con
- * navegación y, debajo, la pantalla que corresponda a la ruta.
+ * Estructura común de las pantallas de un equipo: cabecera con el nombre del
+ * equipo (que lleva a la pantalla de inicio, para cambiar de equipo), el
+ * botón de salir y la barra de navegación, y debajo la pantalla que
+ * corresponda a la ruta.
  */
 function AppLayout() {
   const { current } = useCurrentTeam();
-  const queryClient = useQueryClient();
-
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSuccess: () => {
-      queryClient.setQueryData(["session"], null);
-      // Vaciamos la caché de datos del equipo para que no los vea otra
-      // persona que inicie sesión después en el mismo navegador
-      queryClient.removeQueries({ queryKey: ["teams"] });
-      queryClient.removeQueries({ queryKey: ["players"] });
-      queryClient.removeQueries({ queryKey: ["playerNotes"] });
-      queryClient.removeQueries({ queryKey: ["trainings"] });
-      queryClient.removeQueries({ queryKey: ["training"] });
-      queryClient.removeQueries({ queryKey: ["matches"] });
-      queryClient.removeQueries({ queryKey: ["opponents"] });
-    },
-  });
+  const logoutMutation = useLogout();
 
   return (
     <>
       <header className="border-b border-gray-200">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 p-3">
-          <span className="truncate font-bold">
-            {current?.team?.name ?? "GesCoach"}
-          </span>
-          <nav className="flex gap-1">
-            <NavLink to="/" end className={linkClass}>
-              Inicio
-            </NavLink>
-            <NavLink to="/partidos" className={linkClass}>
-              Partidos
-            </NavLink>
-            <NavLink to="/calendario" className={linkClass}>
-              Calendario
+        <div className="mx-auto max-w-5xl p-3">
+          <div className="flex items-center justify-between gap-2">
+            <Link
+              to="/"
+              title="Cambiar de equipo"
+              className="truncate font-bold hover:underline"
+            >
+              {current?.team?.name ?? "GesCoach"}
+            </Link>
+            <button
+              className="text-sm text-gray-600 underline"
+              onClick={() => logoutMutation.mutate()}
+            >
+              Salir
+            </button>
+          </div>
+          {/* Los enlaces saltan de línea si no caben, por ejemplo en el móvil */}
+          <nav className="mt-2 flex flex-wrap gap-1">
+            <NavLink to="/dashboard" className={linkClass}>
+              Dashboard
             </NavLink>
             <NavLink to="/plantilla" className={linkClass}>
               Plantilla
@@ -56,13 +48,13 @@ function AppLayout() {
             <NavLink to="/entrenos" className={linkClass}>
               Entrenos
             </NavLink>
+            <NavLink to="/partidos" className={linkClass}>
+              Partidos
+            </NavLink>
+            <NavLink to="/calendario" className={linkClass}>
+              Calendario
+            </NavLink>
           </nav>
-          <button
-            className="text-sm text-gray-600 underline"
-            onClick={() => logoutMutation.mutate()}
-          >
-            Salir
-          </button>
         </div>
       </header>
       <Outlet />
