@@ -9,7 +9,7 @@ import StatusIcon from "./StatusIcon";
 /** Plantilla según el estado de los jugadores, y partidos jugados con su récord. */
 export function SquadBlock({ counts, record }: { counts: SquadCounts; record: MatchRecord }) {
   const tiles = [
-    { label: "En plantilla", value: counts.total, status: null, alert: "" },
+    { label: "Disponibles", value: counts.available, status: "available" as const, alert: "" },
     { label: "Lesionados", value: counts.injured, status: "injured" as const, alert: "text-orange-700" },
     { label: "Sancionados", value: counts.suspended, status: "suspended" as const, alert: "text-red-700" },
     { label: "Inactivos", value: counts.inactive, status: "inactive" as const, alert: "" },
@@ -30,10 +30,10 @@ export function SquadBlock({ counts, record }: { counts: SquadCounts; record: Ma
           </div>
         ))}
       </div>
-      <p className="mt-2 text-xs text-gray-500">{counts.available} disponibles</p>
+      <p className="mt-2 text-xs text-gray-500">{counts.total} en plantilla</p>
 
       <p className="mt-4 border-t border-gray-100 pt-3">
-        <span className="text-lg font-semibold">Partidos</span>{" "}
+        <span className="text-lg font-semibold">Partidos: </span>{" "}
         <span className="text-2xl font-bold tabular-nums">{record.played}</span>{" "}
         <span className="text-sm text-gray-500">
           {record.wins} V - {record.draws} E - {record.losses} D

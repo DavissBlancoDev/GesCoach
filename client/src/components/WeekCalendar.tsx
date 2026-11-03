@@ -4,6 +4,7 @@ import type { Training } from "../api/trainings";
 import { buildEvents, dayHeading } from "../lib/calendar";
 import { weekDays } from "../lib/dashboard";
 import { todayIso } from "../lib/trainings";
+import { useState } from "react";
 
 interface WeekCalendarProps {
   trainings: Training[];
@@ -22,6 +23,7 @@ function WeekCalendar({ trainings, matches, division }: WeekCalendarProps) {
   const today = todayIso();
   const days = weekDays(today);
   const events = buildEvents(trainings, matches, division);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   return (
     <section className="rounded border border-gray-200 p-4">
@@ -34,30 +36,61 @@ function WeekCalendar({ trainings, matches, division }: WeekCalendarProps) {
 
       {/* Siete columnas: solo en pantallas anchas */}
       <div className="hidden grid-cols-7 gap-2 md:grid">
-        {days.map((key, index) => (
-          <div key={key} className="min-w-0">
-            <p
-              className={`mb-1 rounded text-center text-xs font-semibold ${
-                key === today ? "bg-green-700 py-0.5 text-white" : "py-0.5 text-gray-600"
-              }`}
-            >
-              {SHORT_DAYS[index]} {Number(key.slice(8))}
-            </p>
-            <div className="space-y-1">
-              {(events.get(key) ?? []).map((event) => (
-                <Link
-                  key={event.key}
-                  to={event.href}
-                  title={event.title}
-                  className={`block truncate rounded border px-1 py-0.5 text-xs ${event.className}`}
-                >
-                  {event.time && <span className="font-semibold">{event.time} </span>}
-                  {event.label}
-                </Link>
-              ))}
+        {days.map((key, index) => {
+          const dayEvents = events.get(key) ?? [];
+
+          return (
+            <div key={key} className="min-w-0">
+              <p
+                className={`mb-1 rounded text-center text-xs font-semibold ${
+                  key === today
+                    ? "bg-green-700 py-0.5 text-white"
+                    : "py-0.5 text-gray-600"
+                }`}
+              >
+                {SHORT_DAYS[index]} {Number(key.slice(8))}
+              </p>
+
+              <div className="space-y-1">
+                {dayEvents.map((event) => (
+                  <Link
+                    key={event.key}
+                    to={event.href}
+                    title={event.title}
+                    className={`block truncate rounded border px-1 py-0.5 text-xs ${event.className}`}
+                  >
+                    {event.time && (
+                      <span className="font-semibold">{event.time} </span>
+                    )}
+                    {event.label}
+                  </Link>
+                ))}
+
+                {dayEvents.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDay(key)}
+                    className="flex h-12 w-full items-center justify-center rounded border border-dashed border-gray-300 text-gray-400 transition hover:border-green-600 hover:text-green-700"
+                    title="Añadir actividad"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    >
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Lista de siete días: solo en el móvil */}
@@ -86,9 +119,12 @@ function WeekCalendar({ trainings, matches, division }: WeekCalendarProps) {
                         className={`flex items-center gap-2 rounded border p-2 ${event.className}`}
                       >
                         <span className="w-20 shrink-0 text-xs font-semibold">
-                          {event.time ?? (event.kind === "match" ? "Por confirmar" : "")}
+                          {event.time ??
+                            (event.kind === "match" ? "Por confirmar" : "")}
                         </span>
-                        <span className="min-w-0 flex-1 truncate">{event.label}</span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {event.label}
+                        </span>
                       </Link>
                     </li>
                   ))}
@@ -98,6 +134,49 @@ function WeekCalendar({ trainings, matches, division }: WeekCalendarProps) {
           );
         })}
       </div>
+      {selectedDay !== null && (
+        <div
+          className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setSelectedDay(null)}
+        >
+          <div
+            className="w-full max-w-xs rounded-lg bg-white p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-1 text-lg font-semibold">Añadir actividad</h3>
+
+            <p className="mb-4 text-sm text-gray-500">
+              ¿Qué quieres añadir al calendario?
+            </p>
+
+            <div className="space-y-2">
+              <Link
+                to="/entrenos"
+                onClick={() => setSelectedDay(null)}
+                className="block rounded border p-3 text-center font-medium transition hover:border-green-600 hover:bg-green-50"
+              >
+                🏃‍♂️ Nuevo entrenamiento
+              </Link>
+
+              <Link
+                to="/partidos"
+                onClick={() => setSelectedDay(null)}
+                className="block rounded border p-3 text-center font-medium transition hover:border-green-600 hover:bg-green-50"
+              >
+                ⚽ Nuevo partido
+              </Link>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSelectedDay(null)}
+              className="mt-3 w-full text-sm text-red-600 transition hover:text-red-800"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
