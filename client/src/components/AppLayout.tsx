@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
-import { useLogout } from "../hooks/useLogout";
+import UserMenu from "./UserMenu";
 
 // Estilo de cada enlace según esté activo o no
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -10,32 +10,27 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 /**
  * Estructura común de las pantallas de un equipo: cabecera con el nombre del
- * equipo (que lleva a la pantalla de inicio, para cambiar de equipo), el
- * botón de salir y la barra de navegación, y debajo la pantalla que
- * corresponda a la ruta.
+ * equipo, el botón para cambiar de equipo y el menú del usuario, la barra de
+ * navegación, y debajo la pantalla que corresponda a la ruta.
  */
 function AppLayout() {
   const { current } = useCurrentTeam();
-  const logoutMutation = useLogout();
 
   return (
     <>
       <header className="border-b border-gray-200">
         <div className="mx-auto max-w-5xl p-3">
-          <div className="flex items-center justify-between gap-2">
-            <Link
-              to="/"
-              title="Cambiar de equipo"
-              className="truncate font-bold hover:underline"
-            >
-              {current?.team?.name ?? "GesCoach"}
-            </Link>
-            <button
-              className="text-sm text-gray-600 underline"
-              onClick={() => logoutMutation.mutate()}
-            >
-              Salir
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="min-w-0 truncate font-bold">{current?.team?.name ?? "GesCoach"}</span>
+            <div className="flex items-center gap-1">
+              <Link
+                to="/"
+                className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50"
+              >
+                Cambiar de equipo
+              </Link>
+              <UserMenu />
+            </div>
           </div>
           {/* Los enlaces saltan de línea si no caben, por ejemplo en el móvil */}
           <nav className="mt-2 flex flex-wrap gap-1">
