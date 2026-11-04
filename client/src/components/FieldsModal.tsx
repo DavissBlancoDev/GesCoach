@@ -23,6 +23,8 @@ export interface TextField extends BaseField {
 export interface SelectField extends BaseField {
   kind: "select";
   options: { value: string; label: string }[];
+  // Si se indica, se puede elegir la opción vacía, con este texto
+  emptyLabel?: string;
 }
 export interface DateField extends BaseField {
   kind: "date";
@@ -102,6 +104,7 @@ function FieldsModal({
                 value={values[field.name] ?? ""}
                 onChange={(e) => setValue(field.name, e.target.value)}
                 options={field.options}
+                emptyLabel={field.emptyLabel}
                 error={error}
                 required={field.required}
               />

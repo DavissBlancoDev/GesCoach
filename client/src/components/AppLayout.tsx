@@ -21,7 +21,7 @@ function AppLayout() {
       <header className="border-b border-gray-200">
         <div className="mx-auto max-w-5xl p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="min-w-0 truncate font-bold">{current?.team?.name ?? "GesCoach"}</span>
+            <span className="min-w-0 truncate font-bold">GesCoach - {current?.team?.name}</span>
             <div className="flex items-center gap-1">
               <Link
                 to="/"

@@ -25,6 +25,7 @@ export interface Team {
   secondaryColor: string;
   fieldName: string;
   fieldLocation?: string;
+  country?: string;
   badgeUrl?: string;
 }
 

@@ -43,7 +43,7 @@ function UserMenu() {
         className="flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-100"
       >
         {user && <Avatar name={user.name} surname={user.surname} size="sm" />}
-        <span className="max-w-[8rem] truncate text-sm font-medium">Hola, {user?.name}</span>
+        <span className="max-w-32 truncate text-sm font-medium">Hola, {user?.name}</span>
         <span aria-hidden="true" className="text-xs text-gray-500">
           ▾
         </span>

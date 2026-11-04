@@ -19,6 +19,8 @@ const teamSchema = new Schema(
     badgeUrl: { type: String, trim: true },
     // Usuario que creó el equipo
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        // País del equipo, como código de 2 letras ("ES")
+    country: { type: String, uppercase: true, trim: true, minlength: 2, maxlength: 2 },
   },
   { timestamps: true }
 );
