@@ -31,6 +31,12 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [x] 🔄 Estados del partido (pendiente, jugando y finalizado) y resultado en directo
 - [x] 📋 Convocatoria agrupada por posiciones, con el máximo de 16 en liga
 - [x] 📊 Pantalla de partidos: último partido, próximo, recientes con color según el resultado y listado completo
+- [x] 📅 Calendario mensual con entrenos y partidos (cuadrícula en pantallas anchas y lista por días en el móvil)
+- [x] 🏠 Varios equipos por usuario: pantalla de inicio para elegir equipo y cambiar de equipo en cualquier momento
+- [x] 📈 Dashboard: plantilla y récord, puntos de liga, próximo y último partido, calendario de la semana, tareas pendientes y riesgo de sanción
+- [x] ⚙️ Ajuste de las amarillas que suponen una sanción (por temporada)
+- [x] 👤 Menú de usuario y Mi perfil: datos personales, correo y contraseña
+- [x] 🏟️ Ajustes del club: equipo, colores, ubicación y miembros
 
 ### 🔨 En curso
 
@@ -42,9 +48,7 @@ _Nada en curso en este momento._
 - [ ] 🏆 Competiciones con su calendario de jornadas y clasificación calculada
 - [ ] 📄 Importación de jornadas desde los PDF de la federación, con vista previa antes de guardar
 - [ ] 📝 Alineación por formaciones y acta del partido (goleadores, asistentes, tarjetas y cambios)
-- [ ] 📅 Calendario mensual
 - [ ] 📊 Estadísticas de jugadores y de equipo
-- [ ] 🏠 Dashboard: próximo partido, próximo entreno, disponibilidad y riesgo de sanción
 - [ ] 💌 Invitaciones por enlace (un solo uso, caducan a los 7 días) y permisos por rol
 - [ ] 🔑 Recuperar la contraseña por email (enlace de un solo uso con caducidad)
 - [ ] 🌐 Iniciar sesión con Google y otras redes sociales
@@ -215,10 +219,17 @@ Vite redirige las peticiones de `/api` al servidor, así que el cliente usa ruta
 | PATCH | `/api/teams/:teamId/matches/:matchId/score` | Cambia el resultado (solo mientras se juega) |
 | PUT | `/api/teams/:teamId/matches/:matchId/callup` | Guarda la convocatoria (solo con el partido pendiente) |
 | DELETE | `/api/teams/:teamId/matches/:matchId` | Borra un partido |
+| PATCH | `/api/teams/:teamId/season` | Cambia los datos de la temporada (la categoría y la modalidad se bloquean si ya hay jugadores o partidos) |
+| PATCH | `/api/teams/:teamId/season/settings` | Cambia las amarillas que suponen una sanción |
+| PATCH | `/api/teams/:teamId/club` | Cambia el nombre, los colores, el país, la localidad y el campo del equipo |
+| GET | `/api/teams/:teamId/club/members` | Miembros del equipo con su rol |
+| PATCH | `/api/account/profile` | Cambia el nombre, los apellidos y la fecha de nacimiento |
+| PATCH | `/api/account/email` | Cambia el correo (pide la contraseña actual) |
+| PUT | `/api/account/password` | Cambia la contraseña (pide la actual) |
 
 ## 🧠 Decisiones de diseño
 
-Más detalle en [Modelo de datos](./docs/modelo-de-datos.md) y [Roles y permisos](./docs/roles-y-permisos.md).
+Más detalle en [Modelo de datos](./docs/modelo-de-datos.md), [Roles y permisos](./docs/roles-y-permisos.md) y [Pantallas y navegación](./docs/pantallas-y-navegacion.md).
 
 - 🏷️ **Equipo y temporada separados.** El equipo es una entidad continua; categoría, división, modalidad y duración del partido pertenecen a la temporada, porque cambian cada año.
 - 🧍 **Jugador como persona y como ficha de temporada.** Los datos estables (nombre, fecha de nacimiento, tutores) viven en el jugador; ficha, dorsal, posiciones y estado viven en su paso por cada temporada. Así se conserva el histórico sin duplicar datos.
@@ -230,6 +241,8 @@ Más detalle en [Modelo de datos](./docs/modelo-de-datos.md) y [Roles y permisos
 - ⚽ **El resultado se guarda desde nuestra perspectiva** (goles a favor y en contra), sea cual sea la sede. La victoria, el empate o la derrota se calculan a partir de ahí, y los marcadores se muestran en el orden en que se anuncian.
 - 🛡️ **El rival es una entidad propia.** Se escribe como texto al programar el partido y el servidor lo reutiliza si ya existe, aunque cambien las mayúsculas, las tildes o los espacios. Así no habrá que migrar nada cuando lleguen los escudos y la importación de los PDF.
 - 📏 **Las reglas de la competición viven en el servidor.** El máximo de convocados (16 en liga, sin límite en copa, torneo y amistoso) no está repartido por las pantallas: el servidor lo comprueba y lo envía con cada partido.
+- 🏠 **Varios equipos por usuario.** Un usuario puede pertenecer a varios equipos con roles distintos, gracias a la membresía. Tras iniciar sesión elige equipo en la pantalla de inicio, y esa elección se guarda en el navegador (solo el identificador del equipo) y no en la dirección de cada pantalla. Si algún día se quieren compartir enlaces por equipo, habrá que pasarla a la dirección.
+- 🔒 **Categoría y modalidad bloqueadas.** No se pueden cambiar si la temporada ya tiene jugadores o partidos, porque condicionan las fichas, las formaciones y las reglas de los partidos. Lo comprueba el servidor, no solo la pantalla.
 
 ## 🔒 Seguridad y privacidad
 
@@ -239,6 +252,8 @@ Más detalle en [Modelo de datos](./docs/modelo-de-datos.md) y [Roles y permisos
 - 🙈 Los datos sensibles (contrato, sueldo, contacto de tutores) se filtran **en el servidor** según el rol, no en el cliente.
 - 🕵️ Los equipos a los que el usuario no pertenece responden `404`, para no revelar su existencia.
 - 👶 La aplicación puede contener datos de menores. El repositorio y las demos solo deben usar **datos ficticios**, y no se suben a Git archivos `.env`, PDF reales de la federación ni escudos de terceros.
+- ⚠️ **Limitación conocida:** cambiar la contraseña no cierra las sesiones abiertas en otros dispositivos, que siguen siendo válidas hasta que caduquen (7 días).
+- ⚠️ **Pendiente antes de desplegar:** limitar los intentos de inicio de sesión, ajustar `cors` con credenciales y traducir los mensajes de validación de Zod, que salen en inglés.
 
 ## 📄 Licencia
 

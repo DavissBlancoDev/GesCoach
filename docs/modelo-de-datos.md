@@ -60,7 +60,8 @@ El equipo como entidad continua entre temporadas.
 | `primaryColor` | texto | Color hexadecimal, por ejemplo `#1d4ed8` |
 | `secondaryColor` | texto | Color hexadecimal |
 | `fieldName` | texto | Nombre del campo local |
-| `fieldLocation` | texto | Opcional |
+| `fieldLocation` | texto | Opcional. Es la localidad del campo (en los ajustes se muestra como "Localidad") |
+| `country` | texto | Opcional. País del equipo, como código de 2 letras (`ES`) |
 | `badgeUrl` | texto | Opcional. Dirección de la imagen del escudo, nunca el archivo. Se rellenará cuando exista la subida de imágenes |
 | `createdBy` | referencia a User | Quien creó el equipo |
 
@@ -80,8 +81,12 @@ Una temporada de un equipo. Aquí viven los datos que cambian cada año.
 | `matchDuration` | número | Duración total del partido, en minutos |
 | `isCurrent` | booleano | Solo una temporada por equipo puede ser la actual |
 | `closedAt` | fecha | Se rellena al finalizar la temporada. Vacío mientras siga abierta |
+| `yellowCardsLimit` | número | Amarillas que suponen una sanción. De 2 a 10, por defecto 5. Depende del reglamento de la competición |
 
-Restricción: un índice único parcial impide tener dos temporadas actuales en el mismo equipo.
+Restricciones:
+
+- Un índice único parcial impide tener dos temporadas actuales en el mismo equipo.
+- La categoría y la modalidad no se pueden cambiar si la temporada ya tiene jugadores o partidos. Lo comprueba el servidor, que responde `409`.
 
 ### Membership
 
@@ -304,6 +309,10 @@ La abreviatura que se muestra en la plantilla (por ejemplo `ED` para extremo der
 | Clasificación *(previsto)* | Desde los resultados de los partidos |
 | Porcentajes de asistencia a entrenos | Desde los registros de asistencia de cada entreno |
 | Resultado de un partido (victoria, empate o derrota) | Desde los goles a favor y en contra |
+| Récord de partidos (V - E - D) | Desde los partidos finalizados, de todos los tipos |
+| Puntos de liga | 3 por victoria y 1 por empate, solo en partidos de liga finalizados |
+| Tareas pendientes del dashboard | Desde el estado de los entrenos, los partidos y las convocatorias |
+| Riesgo de sanción | Jugadores con una amarilla menos que el límite de la temporada |
 | Estadísticas de jugadores y equipo *(previsto)* | Desde las actas de los partidos |
 
 ## Previsto
