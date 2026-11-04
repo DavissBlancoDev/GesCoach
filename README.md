@@ -167,14 +167,25 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 
 ### ▶️ Arranque en desarrollo
 
-En dos terminales:
+Desde la raíz del proyecto, un solo comando arranca el cliente y el servidor a la vez:
 
 ```bash
-# Terminal 1: API (http://localhost:3000)
+pnpm dev
+```
+
+- 🟢 **Cliente**: <http://localhost:5173>
+- 🔵 **API**: <http://localhost:3000>
+
+Los mensajes de cada uno salen en la misma terminal con la etiqueta `CLIENT` o `SERVER`, y `Ctrl + C` los para a la vez.
+
+También se pueden arrancar por separado, en dos terminales:
+
+```bash
+# Terminal 1: API
 cd server
 pnpm dev
 
-# Terminal 2: cliente (http://localhost:5173)
+# Terminal 2: cliente
 cd client
 pnpm dev
 ```
