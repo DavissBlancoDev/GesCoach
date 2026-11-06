@@ -40,14 +40,13 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 
 ### 🔨 En curso
 
-_Nada en curso en este momento._
+- [ ] 📝 Alineación por formaciones y acta del partido (goleadores, asistentes, tarjetas y cambios)
 
 ### 🔮 Previsto
 
 - [ ] 🏁 Finalizar temporada y consulta del histórico
 - [ ] 🏆 Competiciones con su calendario de jornadas y clasificación calculada
 - [ ] 📄 Importación de jornadas desde los PDF de la federación, con vista previa antes de guardar
-- [ ] 📝 Alineación por formaciones y acta del partido (goleadores, asistentes, tarjetas y cambios)
 - [ ] 📊 Estadísticas de jugadores y de equipo
 - [ ] 💌 Invitaciones por enlace (un solo uso, caducan a los 7 días) y permisos por rol
 - [ ] 🔑 Recuperar la contraseña por email (enlace de un solo uso con caducidad)
