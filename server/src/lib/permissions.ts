@@ -63,3 +63,6 @@ export const canSeeCallup = (role: Role) =>
 
 /** Editar el equipo y los ajustes de la temporada: solo el entrenador principal. */
 export const canEditTeam = (role: Role) => role === "head_coach";
+
+/** Hacer la alineación: solo el entrenador principal, igual que la convocatoria. */
+export const canEditLineup = (role: Role) => role === "head_coach";

@@ -15,9 +15,17 @@ import { Opponent } from "../models/Opponent";
 import { PlayerSeason } from "../models/PlayerSeason";
 import type { Role } from "../models/Membership";
 import { MAX_CALLUP } from "../lib/competitions";
+import {
+  buildSquadMap,
+  duplicatedJerseys,
+  lineupProblems,
+  startersRequired,
+  type SquadInfo,
+} from "../lib/lineup";
 import { normalizeName } from "../lib/text";
 import {
   canEditCallup,
+  canEditLineup,
   canManageMatches,
   canRecordMatch,
   canSeeCallup,
@@ -39,6 +47,8 @@ const dateString = z
   .transform((v) => new Date(v))
   .refine((d) => !Number.isNaN(d.getTime()), "Fecha no válida");
 
+const objectId = z.string().refine((v) => mongoose.isValidObjectId(v), "Identificador no válido");
+
 // Datos de un partido: sirven para programarlo y para editarlo
 const matchSchema = z.object({
   competition: z.enum(MATCH_COMPETITIONS),
@@ -50,6 +60,8 @@ const matchSchema = z.object({
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Formato esperado: HH:MM")
     .optional(),
+  // Si no se indica al programarlo, se usa la duración de la temporada
+  durationMinutes: z.number().int().min(10).max(120).optional(),
   city: z.string().trim().max(80).optional(),
   fieldName: z.string().trim().max(120).optional(),
   observations: z.string().trim().max(1000).optional(),
@@ -63,12 +75,28 @@ const scoreSchema = z.object({
 });
 
 const callupSchema = z
+  .object({ players: z.array(objectId).max(40) })
+  .refine((b) => new Set(b.players).size === b.players.length, {
+    message: "Hay jugadores repetidos",
+    path: ["players"],
+  });
+
+// Alineación: un elemento por cada convocado, con su papel y, si hace falta,
+// el dorsal de ese partido
+const lineupSchema = z
   .object({
     players: z
-      .array(z.string().refine((v) => mongoose.isValidObjectId(v), "Jugador no válido"))
+      .array(
+        z.object({
+          player: objectId,
+          starter: z.boolean(),
+          jerseyNumber: z.number().int().min(0).max(99).optional(),
+        })
+      )
       .max(40),
+    goalkeeper: objectId.nullable().optional(),
   })
-  .refine((b) => new Set(b.players).size === b.players.length, {
+  .refine((b) => new Set(b.players.map((p) => p.player)).size === b.players.length, {
     message: "Hay jugadores repetidos",
     path: ["players"],
   });
@@ -82,6 +110,12 @@ const NEXT_STATUSES: Record<MatchStatus, MatchStatus[]> = {
 };
 
 type MatchDoc = InstanceType<typeof Match>;
+
+// Lo que se necesita de la temporada para presentar un partido
+interface SeasonInfo {
+  matchDuration: number;
+  modality: string;
+}
 
 /** Resultado desde nuestro punto de vista. Solo existe en un partido finalizado. */
 function resultOf(match: MatchDoc): "win" | "draw" | "loss" | undefined {
@@ -99,10 +133,20 @@ function resultOf(match: MatchDoc): "win" | "draw" | "loss" | undefined {
 
 /**
  * Convierte un partido en el objeto que se envía al cliente. El máximo de
- * convocados viaja con el partido para que el cliente no repita la regla, y
- * la convocatoria solo se envía a los roles que pueden verla.
+ * convocados, los titulares que hacen falta y la duración viajan con el
+ * partido para que el cliente no repita las reglas. La convocatoria y la
+ * alineación solo se envían a los roles que pueden verlas.
  */
-function toMatchItem(match: MatchDoc, opponent: { id: string; name: string }, role: Role) {
+function toMatchItem(
+  match: MatchDoc,
+  opponent: { id: string; name: string },
+  role: Role,
+  season: SeasonInfo,
+  squad: Map<string, SquadInfo>
+) {
+  const required = startersRequired(season.modality);
+  const canSee = canSeeCallup(role);
+
   return {
     id: match.id,
     competition: match.competition,
@@ -110,6 +154,7 @@ function toMatchItem(match: MatchDoc, opponent: { id: string; name: string }, ro
     opponent,
     date: match.date,
     time: match.time,
+    durationMinutes: match.durationMinutes ?? season.matchDuration,
     city: match.city,
     fieldName: match.fieldName,
     observations: match.observations,
@@ -118,7 +163,20 @@ function toMatchItem(match: MatchDoc, opponent: { id: string; name: string }, ro
     goalsAgainst: match.goalsAgainst,
     result: resultOf(match),
     maxCallup: MAX_CALLUP[match.competition],
-    callup: canSeeCallup(role) ? match.callup.map((c) => c.player.toString()) : undefined,
+    callup: canSee ? match.callup.map((c) => c.player.toString()) : undefined,
+    lineup: canSee
+      ? {
+          startersRequired: required,
+          players: match.callup.map((c) => ({
+            player: c.player.toString(),
+            starter: c.starter,
+            jerseyNumber: c.jerseyNumber,
+          })),
+          goalkeeper: match.goalkeeper?.toString(),
+          // Lo que falta para poder empezar el partido (vacío = completa)
+          problems: lineupProblems(match, squad, required),
+        }
+      : undefined,
   };
 }
 
@@ -142,6 +200,11 @@ async function findMatch(teamId: string, matchId: string) {
   return Match.findOne({ _id: matchId, team: teamId });
 }
 
+/** Dorsales fijos de la plantilla de una temporada. */
+async function loadSquad(seasonId: mongoose.Types.ObjectId) {
+  return buildSquadMap(await PlayerSeason.find({ season: seasonId }));
+}
+
 /**
  * GET /api/teams/:teamId/matches
  * Partidos de la temporada actual, por orden de fecha.
@@ -156,16 +219,19 @@ router.get<TeamParams>("/", async (req, res) => {
 
   const matches = await Match.find({ season: season._id }).sort({ date: 1, time: 1 });
 
-  // Los nombres de los rivales, en una sola consulta
+  // Los nombres de los rivales y los dorsales de la plantilla, cada uno en una sola consulta
   const opponents = await Opponent.find({ _id: { $in: matches.map((m) => m.opponent) } });
   const nameById = new Map<string, string>(opponents.map((o) => [o.id, o.name]));
+  const squad = await loadSquad(season._id);
 
   return res.json(
     matches.map((m) =>
       toMatchItem(
         m,
         { id: m.opponent.toString(), name: nameById.get(m.opponent.toString()) ?? "Rival" },
-        role
+        role,
+        season,
+        squad
       )
     )
   );
@@ -183,7 +249,8 @@ router.get<TeamParams>("/opponents", async (req, res) => {
 
 /**
  * POST /api/teams/:teamId/matches
- * Programa un partido en la temporada actual.
+ * Programa un partido en la temporada actual. La duración se copia de la
+ * temporada si no se indica otra.
  */
 router.post<TeamParams>("/", async (req, res) => {
   const role = res.locals.role as Role;
@@ -209,12 +276,15 @@ router.post<TeamParams>("/", async (req, res) => {
 
   const match = await Match.create({
     ...data,
+    durationMinutes: data.durationMinutes ?? season.matchDuration,
     team: new mongoose.Types.ObjectId(req.params.teamId),
     season: season._id,
     opponent: opponent._id,
   });
 
-  return res.status(201).json(toMatchItem(match, { id: opponent.id, name: opponent.name }, role));
+  return res
+    .status(201)
+    .json(toMatchItem(match, { id: opponent.id, name: opponent.name }, role, season, new Map()));
 });
 
 /**
@@ -229,20 +299,29 @@ router.get<MatchParams>("/:matchId", async (req, res) => {
     return res.status(404).json({ error: "Partido no encontrado" });
   }
 
+  const season = await Season.findById(match.season);
+  if (!season) {
+    return res.status(404).json({ error: "Temporada no encontrada" });
+  }
+
   const opponent = await Opponent.findById(match.opponent);
+  const squad = await loadSquad(season._id);
   return res.json(
     toMatchItem(
       match,
       { id: match.opponent.toString(), name: opponent?.name ?? "Rival" },
-      role
+      role,
+      season,
+      squad
     )
   );
 });
 
 /**
  * PUT /api/teams/:teamId/matches/:matchId
- * Sustituye los datos del partido (no su estado, resultado ni convocatoria).
- * Los campos opcionales que no se envían se borran.
+ * Sustituye los datos del partido (no su estado, resultado, convocatoria ni
+ * alineación). Los campos opcionales que no se envían se borran, salvo la
+ * duración, que se conserva si no llega.
  */
 router.put<MatchParams>("/:matchId", async (req, res) => {
   const role = res.locals.role as Role;
@@ -263,6 +342,11 @@ router.put<MatchParams>("/:matchId", async (req, res) => {
     return res.status(404).json({ error: "Partido no encontrado" });
   }
 
+  const season = await Season.findById(match.season);
+  if (!season) {
+    return res.status(404).json({ error: "Temporada no encontrada" });
+  }
+
   const d = parsed.data;
   const opponent = await findOrCreateOpponent(req.params.teamId, d.opponentName);
 
@@ -271,19 +355,26 @@ router.put<MatchParams>("/:matchId", async (req, res) => {
   match.venue = d.venue;
   match.date = d.date;
   match.time = d.time || undefined;
+  if (d.durationMinutes !== undefined) match.durationMinutes = d.durationMinutes;
   match.city = d.city || undefined;
   match.fieldName = d.fieldName || undefined;
   match.observations = d.observations || undefined;
   await match.save();
 
-  return res.json(toMatchItem(match, { id: opponent.id, name: opponent.name }, role));
+  const squad = await loadSquad(season._id);
+  return res.json(
+    toMatchItem(match, { id: opponent.id, name: opponent.name }, role, season, squad)
+  );
 });
 
 /**
  * PATCH /api/teams/:teamId/matches/:matchId/status
- * Cambia el estado del partido. Al empezar, el marcador arranca en 0-0. De
- * "jugando" solo se puede volver a "pendiente" si sigue 0-0, para no borrar
- * goles sin querer.
+ * Cambia el estado del partido.
+ *  - Para empezarlo (de pendiente a jugando) hace falta la alineación
+ *    completa: convocatoria, titulares, portero y dorsales.
+ *  - Al empezar, el marcador arranca en 0-0.
+ *  - De "jugando" solo se puede volver a "pendiente" si sigue 0-0, para no
+ *    borrar goles sin querer.
  */
 router.patch<MatchParams>("/:matchId/status", async (req, res) => {
   const role = res.locals.role as Role;
@@ -304,6 +395,22 @@ router.patch<MatchParams>("/:matchId/status", async (req, res) => {
   const next = parsed.data.status;
   if (!NEXT_STATUSES[match.status].includes(next)) {
     return res.status(409).json({ error: "No se puede hacer ese cambio de estado" });
+  }
+
+  // Empezar el partido exige la alineación completa. Reabrir uno finalizado, no.
+  if (match.status === "pending" && next === "playing") {
+    const season = await Season.findById(match.season);
+    if (!season) {
+      return res.status(404).json({ error: "Temporada no encontrada" });
+    }
+    const squad = await loadSquad(season._id);
+    const problems = lineupProblems(match, squad, startersRequired(season.modality));
+    if (problems.length > 0) {
+      return res.status(409).json({
+        error: "Falta completar la alineación para empezar el partido",
+        details: { lineup: problems },
+      });
+    }
   }
 
   if (next === "playing" && typeof match.goalsFor !== "number") {
@@ -371,6 +478,9 @@ router.patch<MatchParams>("/:matchId/score", async (req, res) => {
  *  - Los que se añaden de nuevo deben estar disponibles (un lesionado o
  *    sancionado que ya estaba convocado no se quita por cambiar de estado).
  *  - En liga, el máximo es el de la competición (ver lib/competitions.ts).
+ *  - Los que siguen convocados conservan su papel y su dorsal en la
+ *    alineación. Si se quita a un titular, deja de serlo, y si era el
+ *    portero, el partido se queda sin portero.
  */
 router.put<MatchParams>("/:matchId/callup", async (req, res) => {
   const role = res.locals.role as Role;
@@ -403,22 +513,123 @@ router.put<MatchParams>("/:matchId/callup", async (req, res) => {
 
   const squad = await PlayerSeason.find({ season: match.season });
   const squadById = new Map(squad.map((entry) => [entry.player.toString(), entry]));
-  const alreadyCalledUp = new Set(match.callup.map((c) => c.player.toString()));
+  const previous = new Map(match.callup.map((c) => [c.player.toString(), c]));
 
   for (const id of ids) {
     const entry = squadById.get(id);
     if (!entry) {
       return res.status(400).json({ error: "Hay jugadores que no son de la plantilla" });
     }
-    if (!alreadyCalledUp.has(id) && entry.status !== "available") {
+    if (!previous.has(id) && entry.status !== "available") {
       return res.status(400).json({ error: "Solo se pueden convocar jugadores disponibles" });
     }
   }
 
-  match.callup = ids.map((player) => ({ player: new mongoose.Types.ObjectId(player) }));
+  // Titulares que se quedan fuera de la convocatoria
+  const removedStarters = match.callup.filter(
+    (c) => c.starter && !ids.includes(c.player.toString())
+  ).length;
+
+  match.callup = ids.map((id) => {
+    const prev = previous.get(id);
+    return prev
+      ? { player: prev.player, jerseyNumber: prev.jerseyNumber, starter: prev.starter }
+      : { player: new mongoose.Types.ObjectId(id), starter: false };
+  });
+  if (match.goalkeeper && !ids.includes(match.goalkeeper.toString())) {
+    match.goalkeeper = undefined;
+  }
   await match.save();
 
-  return res.json({ id: match.id, callup: ids });
+  return res.json({ id: match.id, callup: ids, removedStarters });
+});
+
+/**
+ * PUT /api/teams/:teamId/matches/:matchId/lineup
+ * Guarda la alineación: quiénes son titulares, el portero y el dorsal de
+ * este partido de cada convocado. Solo con el partido pendiente y solo el
+ * entrenador principal. Se puede guardar incompleta; para empezar el partido
+ * tendrá que estar completa.
+ *
+ * Reglas:
+ *  - Debe incluir exactamente a los convocados.
+ *  - No puede haber más titulares de los que marca la modalidad.
+ *  - El portero debe ser uno de los titulares.
+ *  - Los dorsales no se pueden repetir. Cuenta el del partido si lo hay y, si
+ *    no, el fijo de la temporada. El dorsal fijo del jugador no cambia.
+ */
+router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
+  const role = res.locals.role as Role;
+  if (!canEditLineup(role)) {
+    return res.status(403).json({ error: "Solo el entrenador principal puede hacer la alineación" });
+  }
+
+  const parsed = lineupSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: "Datos no válidos",
+      details: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  const match = await findMatch(req.params.teamId, req.params.matchId);
+  if (!match) {
+    return res.status(404).json({ error: "Partido no encontrado" });
+  }
+  if (match.status !== "pending") {
+    return res.status(409).json({ error: "La alineación solo se puede cambiar con el partido pendiente" });
+  }
+
+  const season = await Season.findById(match.season);
+  if (!season) {
+    return res.status(404).json({ error: "Temporada no encontrada" });
+  }
+
+  const sent = parsed.data.players;
+  const calledUp = new Set(match.callup.map((c) => c.player.toString()));
+  if (sent.length !== calledUp.size || sent.some((p) => !calledUp.has(p.player))) {
+    return res.status(400).json({ error: "La alineación debe incluir exactamente a los convocados" });
+  }
+
+  const required = startersRequired(season.modality);
+  const starters = sent.filter((p) => p.starter);
+  if (starters.length > required) {
+    return res.status(400).json({ error: `No puede haber más de ${required} titulares` });
+  }
+
+  const goalkeeper = parsed.data.goalkeeper ?? undefined;
+  if (goalkeeper && !starters.some((p) => p.player === goalkeeper)) {
+    return res.status(400).json({ error: "El portero debe ser uno de los titulares" });
+  }
+
+  const entries = sent.map((p) => ({
+    player: new mongoose.Types.ObjectId(p.player),
+    starter: p.starter,
+    jerseyNumber: p.jerseyNumber,
+  }));
+
+  const squad = await loadSquad(season._id);
+  const duplicated = duplicatedJerseys(entries, squad);
+  if (duplicated.length > 0) {
+    return res.status(400).json({
+      error: `Hay dorsales repetidos: ${duplicated.join(", ")}`,
+    });
+  }
+
+  match.callup = entries;
+  match.goalkeeper = goalkeeper ? new mongoose.Types.ObjectId(goalkeeper) : undefined;
+  await match.save();
+
+  const opponent = await Opponent.findById(match.opponent);
+  return res.json(
+    toMatchItem(
+      match,
+      { id: match.opponent.toString(), name: opponent?.name ?? "Rival" },
+      role,
+      season,
+      squad
+    )
+  );
 });
 
 /**

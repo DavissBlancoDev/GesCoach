@@ -11,6 +11,21 @@ export interface Opponent {
   name: string;
 }
 
+// Un convocado y su papel en la alineación
+export interface LineupPlayer {
+  player: string; // identificador del jugador
+  starter: boolean;
+  jerseyNumber?: number; // dorsal de ESTE partido, si es distinto del fijo
+}
+
+// Alineación de un partido. Solo llega a los roles que ven la convocatoria.
+export interface Lineup {
+  startersRequired: number; // titulares que marca la modalidad (7, 8 u 11)
+  players: LineupPlayer[];
+  goalkeeper?: string; // identificador del portero
+  problems: string[]; // lo que falta para empezar el partido (vacío = completa)
+}
+
 // Partido tal como lo devuelve el servidor. El resultado va desde nuestro
 // punto de vista, sea cual sea la sede. La convocatoria solo llega a los
 // roles que pueden verla.
@@ -21,6 +36,7 @@ export interface Match {
   opponent: Opponent;
   date: string; // fecha a medianoche UTC, en formato ISO
   time?: string; // "HH:MM". Sin hora, el partido queda "por confirmar"
+  durationMinutes: number;
   city?: string;
   fieldName?: string;
   observations?: string;
@@ -30,6 +46,7 @@ export interface Match {
   result?: MatchResult; // solo en partidos finalizados
   maxCallup: number | null; // null = sin límite
   callup?: string[]; // identificadores de los jugadores convocados
+  lineup?: Lineup;
 }
 
 // Datos que envía el formulario al programar o editar un partido
@@ -37,6 +54,7 @@ export interface MatchData {
   competition: MatchCompetition;
   venue: MatchVenue;
   opponentName: string;
+  durationMinutes?: number;
   date: string; // AAAA-MM-DD
   time?: string;
   city?: string;
@@ -84,7 +102,7 @@ export const updateMatchScore = (
 
 /** Sustituye la convocatoria por la lista de jugadores enviada. */
 export const saveCallup = (teamId: string, matchId: string, players: string[]) =>
-  api<{ id: string; callup: string[] }>(`${base(teamId)}/${matchId}/callup`, {
+  api<{ id: string; callup: string[]; removedStarters: number }>(`${base(teamId)}/${matchId}/callup`, {
     method: "PUT",
     body: JSON.stringify({ players }),
   });
@@ -92,3 +110,16 @@ export const saveCallup = (teamId: string, matchId: string, players: string[]) =
 /** Borra un partido. */
 export const deleteMatch = (teamId: string, matchId: string) =>
   api<void>(`${base(teamId)}/${matchId}`, { method: "DELETE" });
+
+// Lo que se envía al guardar la alineación: un elemento por cada convocado
+export interface LineupData {
+  players: { player: string; starter: boolean; jerseyNumber?: number }[];
+  goalkeeper: string | null;
+}
+
+/** Guarda la alineación: titulares, portero y dorsal de este partido de cada convocado. */
+export const saveLineup = (teamId: string, matchId: string, data: LineupData) =>
+  api<Match>(`${base(teamId)}/${matchId}/lineup`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });

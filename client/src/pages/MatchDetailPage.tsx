@@ -23,7 +23,9 @@ import {
   formatMatchDate,
   matchTimeLabel,
 } from "../lib/matches";
+import { getFieldErrors } from "../api/client";
 import CallupPanel from "../components/CallupPanel";
+import LineupPanel from "../components/LineupPanel";
 import DefaultBadge from "../components/DefaultBadge";
 import MatchForm from "../components/MatchForm";
 
@@ -201,6 +203,7 @@ function MatchDetailPage() {
             </span>{" "}
             {VENUE_LABELS[match.venue]}
             {place && ` · ${place}`}
+            {` · ${match.durationMinutes} min`}
           </p>
           <span
             className={`mt-2 inline-block rounded-full px-3 py-0.5 text-xs font-medium ${MATCH_STATUS_COLORS[match.status]}`}
@@ -334,7 +337,15 @@ function MatchDetailPage() {
                 </p>
               )}
               {statusMutation.isError && (
-                <p className="text-sm text-red-600">{statusMutation.error.message}</p>
+                <div className="text-sm text-red-600">
+                  <p>{statusMutation.error.message}</p>
+                  {/* Al intentar empezar sin alineación completa, se enseña lo que falta */}
+                  <ul className="mt-1 list-inside list-disc">
+                    {getFieldErrors(statusMutation.error).lineup?.map((problem) => (
+                      <li key={problem}>{problem}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </div>
           )}
@@ -350,6 +361,18 @@ function MatchDetailPage() {
           {match.callup && (
             <div className="mt-6">
               <CallupPanel teamId={team._id} match={match} canEdit={canEditCallup(role)} />
+            </div>
+          )}
+
+          {/* La alineación se hace con los convocados. La key reinicia el panel cuando cambia la convocatoria */}
+          {match.lineup && match.callup && (
+            <div className="mt-6">
+              <LineupPanel
+                key={match.callup.join(",")}
+                teamId={team._id}
+                match={match}
+                canEdit={canEditCallup(role)}
+              />
             </div>
           )}
         </>

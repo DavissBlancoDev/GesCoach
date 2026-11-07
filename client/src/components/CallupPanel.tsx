@@ -41,6 +41,8 @@ function CallupPanel({ teamId, match, canEdit }: CallupPanelProps) {
   // Jugadores marcados ahora mismo, por su identificador
   const [selected, setSelected] = useState<Set<string>>(() => new Set(match.callup ?? []));
   const [saved, setSaved] = useState(false);
+  // Titulares que se han quitado de la alineación al guardar la convocatoria
+  const [removedStarters, setRemovedStarters] = useState(0);
 
   const editable = canEdit && match.status === "pending";
   const max = match.maxCallup;
@@ -52,8 +54,9 @@ function CallupPanel({ teamId, match, canEdit }: CallupPanelProps) {
 
   const mutation = useMutation({
     mutationFn: () => saveCallup(teamId, match.id, [...selected]),
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       setSaved(true);
+      setRemovedStarters(data.removedStarters);
       await queryClient.invalidateQueries({ queryKey: ["matches", teamId] });
     },
   });
@@ -184,7 +187,15 @@ function CallupPanel({ teamId, match, canEdit }: CallupPanelProps) {
       {editable && (
         <div className="mt-4 space-y-2">
           {mutation.isError && <p className="text-sm text-red-600">{mutation.error.message}</p>}
-          {saved && <p className="text-sm text-green-700">Convocatoria guardada.</p>}
+          {saved && (
+            <p className="text-sm text-green-700">
+              Convocatoria guardada.
+              {removedStarters > 0 &&
+                ` Se ha quitado ${removedStarters} ${
+                  removedStarters === 1 ? "titular" : "titulares"
+                } de la alineación.`}
+            </p>
+          )}
           <button
             type="button"
             disabled={!dirty || mutation.isPending}

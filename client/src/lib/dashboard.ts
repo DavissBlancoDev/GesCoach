@@ -110,7 +110,8 @@ interface TaskInput {
 
 /**
  * Tareas pendientes:
- *  - Convocatoria sin hacer a menos de 48 horas del partido.
+ *  - Convocatoria sin hacer, o alineación sin completar, a menos de 48 horas
+ *    del partido.
  *  - Partido con la fecha pasada que no se ha finalizado.
  *  - Entreno con la fecha pasada sin pasar lista.
  * Cada tarea lleva a la pantalla donde se resuelve.
@@ -123,18 +124,27 @@ export function pendingTasks(input: TaskInput): PendingTask[] {
   if (input.canEditCallup) {
     for (const m of input.matches) {
       if (m.status !== "pending" || m.date.slice(0, 10) < today) continue;
-      // La convocatoria solo llega a los roles que pueden verla
-      if (!m.callup || m.callup.length > 0) continue;
+      // La convocatoria y la alineación solo llegan a los roles que pueden verlas
+      if (!m.callup || !m.lineup) continue;
 
       // Sin hora se toma el inicio del día: es el caso más prudente
       const kickoff = new Date(`${m.date.slice(0, 10)}T${m.time ?? "00:00"}:00`);
       const hoursLeft = (kickoff.getTime() - now.getTime()) / 36e5;
-      if (hoursLeft <= CALLUP_WARNING_HOURS) {
+      if (hoursLeft > CALLUP_WARNING_HOURS) continue;
+
+      const when = `${m.opponent.name}, ${formatMatchDateShort(m.date)}${
+        m.time ? ` a las ${m.time}` : ""
+      }`;
+      if (m.callup.length === 0) {
         tasks.push({
           key: `callup-${m.id}`,
-          text: `Convocatoria sin hacer: ${m.opponent.name}, ${formatMatchDateShort(m.date)}${
-            m.time ? ` a las ${m.time}` : ""
-          }`,
+          text: `Convocatoria sin hacer: ${when}`,
+          href: `/partidos/${m.id}`,
+        });
+      } else if (m.lineup.problems.length > 0) {
+        tasks.push({
+          key: `lineup-${m.id}`,
+          text: `Alineación sin completar: ${when}`,
           href: `/partidos/${m.id}`,
         });
       }

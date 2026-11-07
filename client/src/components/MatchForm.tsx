@@ -9,6 +9,7 @@ import {
   type MatchVenue,
 } from "../api/matches";
 import { getFieldErrors } from "../api/client";
+import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { useOpponents } from "../hooks/useMatches";
 import { COMPETITION_LABELS, VENUE_LABELS, competitionLabel } from "../lib/matches";
 import DateSelect from "./DateSelect";
@@ -36,6 +37,7 @@ const currentYear = new Date().getFullYear();
 function MatchForm({ teamId, division, defaultFieldName, match, onDone }: MatchFormProps) {
   const isEditing = Boolean(match);
   const { data: opponents } = useOpponents(teamId);
+  const { current } = useCurrentTeam();
 
   const [competition, setCompetition] = useState<MatchCompetition>(match?.competition ?? "league");
   const [venue, setVenue] = useState<MatchVenue>(match?.venue ?? "home");
@@ -45,6 +47,10 @@ function MatchForm({ teamId, division, defaultFieldName, match, onDone }: MatchF
   const [city, setCity] = useState(match?.city ?? "");
   const [fieldName, setFieldName] = useState(match ? (match.fieldName ?? "") : defaultFieldName);
   const [observations, setObservations] = useState(match?.observations ?? "");
+  // Al programar, se propone la duración de la temporada; al editar, la del partido
+  const [duration, setDuration] = useState(
+    String(match?.durationMinutes ?? current?.currentSeason?.matchDuration ?? "")
+  );
 
   const queryClient = useQueryClient();
 
@@ -83,6 +89,7 @@ function MatchForm({ teamId, division, defaultFieldName, match, onDone }: MatchF
       competition,
       venue,
       opponentName: opponentName.trim(),
+      durationMinutes: duration === "" ? undefined : Number(duration),
       date,
       // Los campos opcionales vacíos no se envían. Al editar, el servidor
       // borra los que no llegan, así que así se pueden vaciar.
@@ -162,6 +169,17 @@ function MatchForm({ teamId, division, defaultFieldName, match, onDone }: MatchF
           error={firstError("time")}
         />
       </div>
+
+      <FormField
+        id="matchDuration"
+        label="Duración del partido (minutos)"
+        type="number"
+        min={10}
+        max={120}
+        value={duration}
+        onChange={(e) => setDuration(e.target.value)}
+        error={firstError("durationMinutes")}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField
