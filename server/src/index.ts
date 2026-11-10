@@ -13,6 +13,7 @@ import matchesRouter from "./routes/matches";
 import seasonSettingsRouter from "./routes/seasonSettings";
 import accountRouter from "./routes/account";
 import clubSettingsRouter from "./routes/clubSettings";
+import calendarNotesRouter from "./routes/calendarNotes";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -23,6 +24,7 @@ app.use(cookieParser());
 app.use("/api/teams/:teamId/players/:playerId/notes", playerNotesRouter);
 app.use("/api/teams/:teamId/players", playersRouter);
 app.use("/api/teams/:teamId/trainings", trainingsRouter);
+app.use("/api/teams/:teamId/calendar-notes", calendarNotesRouter);
 app.use("/api/teams/:teamId/matches", matchesRouter);
 app.use("/api/teams/:teamId/season", seasonSettingsRouter);
 app.use("/api/account", accountRouter);

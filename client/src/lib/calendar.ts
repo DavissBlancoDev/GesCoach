@@ -1,11 +1,12 @@
 import type { Match } from "../api/matches";
 import type { Training } from "../api/trainings";
+import type { CalendarNote } from "../api/calendarNotes";
 import { RESULT_STYLES, VENUE_ICONS, competitionLabel } from "./matches";
 
 // Un elemento del calendario: un entreno o un partido
 export interface CalendarEvent {
   key: string;
-  kind: "training" | "match";
+  kind: "training" | "match" | "note";
   date: string; // AAAA-MM-DD
   time?: string; // "HH:MM"
   label: string; // texto corto que se ve en el calendario
@@ -43,7 +44,8 @@ export const dateKey = (year: number, month: number, day: number) =>
 export function buildEvents(
   trainings: Training[],
   matches: Match[],
-  division: string
+  division: string,
+  notes: CalendarNote[] = [],
 ): Map<string, CalendarEvent[]> {
   const map = new Map<string, CalendarEvent[]>();
   const add = (event: CalendarEvent) => {
@@ -88,6 +90,19 @@ export function buildEvents(
         `vs ${m.opponent.name}`,
         m.time ?? "Hora por confirmar",
       ].join(" · "),
+    });
+  }
+
+  for (const note of notes) {
+    add({
+      key: `note-${note.id}`,
+      kind: "note",
+      date: note.date.slice(0, 10),
+      time: note.startTime,
+      label: note.title,
+      href: "",
+      className: "border-amber-300 bg-amber-100 text-amber-900",
+      title: [note.title, note.startTime, note.details].filter(Boolean).join(" · "),
     });
   }
 
