@@ -29,7 +29,7 @@ function RegisterPage() {
     },
     onSuccess: (loggedUser) => {
       queryClient.setQueryData(["session"], loggedUser);
-      navigate("/", { replace: true });
+      navigate("/inicio", { replace: true });
     },
   });
 

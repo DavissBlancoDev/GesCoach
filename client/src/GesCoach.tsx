@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import LandingPage from "./pages/LandingPage";
 import HomePage from "./pages/HomePage";
 import CreateTeamPage from "./pages/CreateTeamPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -20,13 +21,14 @@ import AppLayout from "./components/AppLayout";
 function GesCoach() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registro" element={<RegisterPage />} />
 
       {/* Todo lo de dentro exige sesión iniciada */}
       <Route element={<ProtectedRoute />}>
         {/* Pantalla de inicio: elegir equipo */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/inicio" element={<HomePage />} />
         <Route path="/crear-equipo" element={<CreateTeamPage />} />
 
         {/* Lo de aquí dentro exige, además, tener un equipo elegido */}

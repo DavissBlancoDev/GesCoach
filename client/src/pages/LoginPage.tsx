@@ -16,7 +16,7 @@ function LoginPage() {
     mutationFn: login,
     onSuccess: (loggedUser) => {
       queryClient.setQueryData(["session"], loggedUser);
-      navigate("/", { replace: true });
+      navigate("/inicio", { replace: true });
     },
   });
 
