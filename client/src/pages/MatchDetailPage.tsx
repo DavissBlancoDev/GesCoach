@@ -181,7 +181,7 @@ function MatchDetailPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-4">
+    <main className="mx-auto max-w-6xl p-4">
       <Link to="/partidos" className="text-sm text-gray-600 hover:underline">
         ← Partidos
       </Link>
@@ -275,16 +275,18 @@ function MatchDetailPage() {
         </div>
       ) : (
         <>
-          <Scoreboard
+          <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-start">
+            <div className="space-y-6">
+              <Scoreboard
             match={match}
             teamName={team.name}
             editable={canRecord && match.status === "playing"}
             busy={scoreMutation.isPending}
             onChange={changeScore}
           />
-          {scoreMutation.isError && (
-            <p className="mt-2 text-sm text-red-600">{scoreMutation.error.message}</p>
-          )}
+              {scoreMutation.isError && (
+                <p className="mt-2 text-sm text-red-600">{scoreMutation.error.message}</p>
+              )}
 
           {/* Cambio de estado: pendiente -> jugando -> finalizado */}
           {canRecord && (
@@ -348,6 +350,13 @@ function MatchDetailPage() {
             </section>
           )}
 
+          {(match.events || match.status === "playing" || match.status === "finished") && (
+            <MatchEventsPanel teamId={team._id} match={match} canEdit={canRecord} />
+          )}
+            </div>
+
+            <div className="space-y-6">
+
           {/* La convocatoria solo llega a los roles que pueden verla */}
           {match.callup && (
             <div className="mt-6">
@@ -389,10 +398,8 @@ function MatchDetailPage() {
               )}
             </div>
           )}
-
-          {(match.events || match.status === "playing" || match.status === "finished") && (
-            <MatchEventsPanel teamId={team._id} match={match} canEdit={canRecord} />
-          )}
+            </div>
+          </div>
         </>
       )}
     </main>

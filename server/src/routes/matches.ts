@@ -112,6 +112,7 @@ const eventSchema = z
     assist: objectId.optional(),
     playerIn: objectId.optional(),
     playerOut: objectId.optional(),
+    opponentJerseyNumber: z.number().int().min(0).max(99).optional(),
     penalty: z.boolean().default(false),
     ownGoal: z.boolean().default(false),
   })
@@ -127,6 +128,12 @@ const eventSchema = z
     }
     if (event.type !== "goal" && (event.side || event.assist || event.penalty || event.ownGoal)) {
       ctx.addIssue({ code: "custom", message: "Esos datos solo se aplican a los goles" });
+    }
+    if (event.type !== "goal" && event.opponentJerseyNumber !== undefined) {
+      ctx.addIssue({ code: "custom", message: "El dorsal rival solo se aplica a los goles" });
+    }
+    if (event.type === "goal" && event.side !== "against" && event.opponentJerseyNumber !== undefined) {
+      ctx.addIssue({ code: "custom", path: ["opponentJerseyNumber"], message: "El dorsal rival solo se aplica a goles rivales" });
     }
   });
 
@@ -201,6 +208,7 @@ function toMatchItem(
           assist: event.assist?.toString(),
           playerIn: event.playerIn?.toString(),
           playerOut: event.playerOut?.toString(),
+          opponentJerseyNumber: event.opponentJerseyNumber,
           penalty: event.penalty,
           ownGoal: event.ownGoal,
         }))
@@ -712,6 +720,7 @@ router.post<MatchParams>("/:matchId/events", async (req, res) => {
     assist: event.assist ? new mongoose.Types.ObjectId(event.assist) : undefined,
     playerIn: event.playerIn ? new mongoose.Types.ObjectId(event.playerIn) : undefined,
     playerOut: event.playerOut ? new mongoose.Types.ObjectId(event.playerOut) : undefined,
+    opponentJerseyNumber: event.opponentJerseyNumber,
   });
   if (event.type === "goal") {
     if (event.side === "for") match.goalsFor = (match.goalsFor ?? 0) + 1;

@@ -31,6 +31,7 @@ interface IMatchEvent {
   assist?: Types.ObjectId;
   playerIn?: Types.ObjectId;
   playerOut?: Types.ObjectId;
+  opponentJerseyNumber?: number;
   penalty: boolean;
   ownGoal: boolean;
 }
@@ -79,6 +80,7 @@ const eventSchema = new Schema<IMatchEvent>(
     assist: { type: Schema.Types.ObjectId, ref: "Player" },
     playerIn: { type: Schema.Types.ObjectId, ref: "Player" },
     playerOut: { type: Schema.Types.ObjectId, ref: "Player" },
+    opponentJerseyNumber: { type: Number, min: 0, max: 99 },
     penalty: { type: Boolean, default: false },
     ownGoal: { type: Boolean, default: false },
   },

@@ -101,6 +101,12 @@ function CallupPanel({ teamId, match, canEdit }: CallupPanelProps) {
     setSaved(false);
   }
 
+  /** Quita de una vez todos los jugadores de la selección actual. */
+  function clearCallup() {
+    setSelected(new Set());
+    setSaved(false);
+  }
+
   // En edición salen todos los jugadores (menos los inactivos que no estén
   // convocados). En solo lectura, únicamente los convocados.
   const groups = POSITION_GROUPS.map((group) => ({
@@ -130,6 +136,15 @@ function CallupPanel({ teamId, match, canEdit }: CallupPanelProps) {
           >
             Exportar convocatoria
           </button>
+          {editable && selected.size > 0 && (
+            <button
+              type="button"
+              onClick={clearCallup}
+              className="rounded border border-red-700 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+            >
+              Desmarcar todos
+            </button>
+          )}
           {exportMessage && <span className="text-sm text-gray-600">{exportMessage}</span>}
         </div>
       )}

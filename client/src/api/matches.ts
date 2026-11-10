@@ -17,6 +17,7 @@ export interface MatchEvent {
   assist?: string;
   playerIn?: string;
   playerOut?: string;
+  opponentJerseyNumber?: number;
   penalty: boolean;
   ownGoal: boolean;
 }
@@ -148,6 +149,7 @@ export interface MatchEventData {
   assist?: string;
   playerIn?: string;
   playerOut?: string;
+  opponentJerseyNumber?: number;
   penalty?: boolean;
   ownGoal?: boolean;
 }
