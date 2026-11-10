@@ -34,6 +34,51 @@ export const emptyStats = (): PlayerStats => ({
 });
 
 /**
+ * Calcula la participación de un jugador a partir de todos sus intervalos
+ * en el campo. Es importante no quedarse con el primer entra/sale: en las
+ * competiciones con cambios ilimitados un jugador puede volver a entrar.
+ */
+function playerParticipation(
+  events: Array<{
+    type: string;
+    minute: number;
+    playerIn?: { toString(): string };
+    playerOut?: { toString(): string };
+  }>,
+  playerId: string,
+  starter: boolean,
+  duration: number
+): { played: boolean; minutes: number } {
+  let active = starter;
+  let intervalStart = starter ? 0 : undefined;
+  let minutes = 0;
+  let appeared = starter;
+
+  // El orden del acta se conserva cuando dos cambios tienen el mismo minuto.
+  const substitutions = events
+    .filter((event) => event.type === "substitution")
+    .map((event, index) => ({ event, index }))
+    .sort((a, b) => a.event.minute - b.event.minute || a.index - b.index);
+
+  for (const { event } of substitutions) {
+    const minute = Math.max(0, Math.min(duration, event.minute));
+    if (event.playerOut?.toString() === playerId && active) {
+      minutes += Math.max(0, minute - (intervalStart ?? minute));
+      active = false;
+      intervalStart = undefined;
+    }
+    if (event.playerIn?.toString() === playerId && !active) {
+      active = true;
+      intervalStart = minute;
+      appeared = true;
+    }
+  }
+
+  if (active) minutes += Math.max(0, duration - (intervalStart ?? duration));
+  return { played: appeared, minutes };
+}
+
+/**
  * Estadísticas de cada jugador de una temporada.
  * Devuelve un Map: identificador del jugador -> sus estadísticas.
  *
@@ -60,29 +105,20 @@ export async function getSeasonStats(
     const starters = new Set(
       callup.filter((entry) => entry.starter).map((entry) => entry.player.toString())
     );
-    const substitutionsIn = new Set(
-      (match.events ?? [])
-        .filter((event) => event.type === "substitution" && event.playerIn)
-        .map((event) => event.playerIn!.toString())
-    );
-
     for (const playerId of calledIds) {
       if (!requested.has(playerId)) continue;
       const stats = result.get(playerId) ?? emptyStats();
       stats.calledUp += 1;
       if (starters.has(playerId)) stats.started += 1;
 
-      if (starters.has(playerId) || substitutionsIn.has(playerId)) {
-        stats.played += 1;
-        const duration = match.durationMinutes ?? 90;
-        const outgoing = (match.events ?? [])
-          .filter((event) => event.type === "substitution" && event.playerOut?.toString() === playerId)
-          .sort((a, b) => a.minute - b.minute)[0];
-        const incoming = (match.events ?? [])
-          .filter((event) => event.type === "substitution" && event.playerIn?.toString() === playerId)
-          .sort((a, b) => a.minute - b.minute)[0];
-        stats.minutes += outgoing?.minute ?? (incoming ? Math.max(0, duration - incoming.minute) : duration);
-      }
+      const participation = playerParticipation(
+        match.events ?? [],
+        playerId,
+        starters.has(playerId),
+        match.durationMinutes ?? 90
+      );
+      if (participation.played) stats.played += 1;
+      stats.minutes += participation.minutes;
 
       for (const event of match.events ?? []) {
         if (event.type === "goal" && event.side === "for" && !event.ownGoal) {
