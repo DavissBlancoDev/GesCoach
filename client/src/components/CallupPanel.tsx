@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { saveCallup, type Match } from "../api/matches";
 import type { SquadPlayer } from "../api/players";
@@ -41,6 +41,7 @@ function CallupPanel({ teamId, match, canEdit }: CallupPanelProps) {
   // Jugadores marcados ahora mismo, por su identificador
   const [selected, setSelected] = useState<Set<string>>(() => new Set(match.callup ?? []));
   const [saved, setSaved] = useState(false);
+  const [exportMessage, setExportMessage] = useState<string>();
   // Titulares que se han quitado de la alineación al guardar la convocatoria
   const [removedStarters, setRemovedStarters] = useState(0);
 
@@ -51,6 +52,34 @@ function CallupPanel({ teamId, match, canEdit }: CallupPanelProps) {
   // Hay cambios sin guardar si la selección difiere de la que tiene el servidor
   const original = match.callup ?? [];
   const dirty = selected.size !== original.length || original.some((id) => !selected.has(id));
+
+  useEffect(() => {
+    if (!exportMessage) return;
+    const timeout = window.setTimeout(() => setExportMessage(undefined), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [exportMessage]);
+
+  /** Copia la convocatoria guardada con un formato sencillo para compartirla. */
+  async function exportCallup() {
+    const savedCallup = match.callup ?? [];
+    const byId = new Map((players ?? []).map((player) => [player.id, player]));
+    const text = savedCallup
+      .map((playerId, index) => {
+        const player = byId.get(playerId);
+        if (!player) return `${index + 1}. Jugador`;
+        const firstName = player.name.trim().split(/\s+/)[0] ?? player.name;
+        const firstSurname = player.surname.trim().split(/\s+/)[0] ?? player.surname;
+        return `${index + 1}. ${firstName} ${firstSurname}`;
+      })
+      .join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setExportMessage("Convocatoria copiada al portapapeles.");
+    } catch {
+      setExportMessage("No se ha podido acceder al portapapeles.");
+    }
+  }
 
   const mutation = useMutation({
     mutationFn: () => saveCallup(teamId, match.id, [...selected]),
@@ -91,6 +120,19 @@ function CallupPanel({ teamId, match, canEdit }: CallupPanelProps) {
           {max !== null ? ` de ${max}` : ""} convocados
         </span>
       </div>
+
+      {(match.callup ?? []).length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={exportCallup}
+            className="rounded border border-green-700 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-50"
+          >
+            Exportar convocatoria
+          </button>
+          {exportMessage && <span className="text-sm text-gray-600">{exportMessage}</span>}
+        </div>
+      )}
 
       {editable && (
         <p className="mb-3 mt-1 text-xs text-gray-500">
