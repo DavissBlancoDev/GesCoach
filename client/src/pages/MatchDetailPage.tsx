@@ -26,6 +26,7 @@ import {
 import { getFieldErrors } from "../api/client";
 import CallupPanel from "../components/CallupPanel";
 import LineupPanel from "../components/LineupPanel";
+import MatchEventsPanel from "../components/MatchEventsPanel";
 import DefaultBadge from "../components/DefaultBadge";
 import MatchForm from "../components/MatchForm";
 
@@ -289,16 +290,6 @@ function MatchDetailPage() {
           {canRecord && (
             <div className="mt-4 space-y-2">
               <div className="flex flex-wrap gap-2">
-                {match.status === "pending" && (
-                  <button
-                    type="button"
-                    disabled={statusMutation.isPending}
-                    onClick={() => statusMutation.mutate("playing")}
-                    className="rounded bg-green-700 px-4 py-2 text-white disabled:opacity-50"
-                  >
-                    Empezar partido
-                  </button>
-                )}
                 {match.status === "playing" && (
                   <>
                     <button
@@ -336,7 +327,7 @@ function MatchDetailPage() {
                   Para corregir el resultado, reabre el partido, cámbialo y vuelve a finalizarlo.
                 </p>
               )}
-              {statusMutation.isError && (
+              {statusMutation.isError && match.status !== "pending" && (
                 <div className="text-sm text-red-600">
                   <p>{statusMutation.error.message}</p>
                   {/* Al intentar empezar sin alineación completa, se enseña lo que falta */}
@@ -374,6 +365,33 @@ function MatchDetailPage() {
                 canEdit={canEditCallup(role)}
               />
             </div>
+          )}
+
+          {match.status === "pending" && canRecord && (
+            <div className="mt-6 space-y-2">
+              <button
+                type="button"
+                disabled={statusMutation.isPending}
+                onClick={() => statusMutation.mutate("playing")}
+                className="rounded bg-green-700 px-4 py-2 text-white disabled:opacity-50"
+              >
+                Empezar partido
+              </button>
+              {statusMutation.isError && (
+                <div className="text-sm text-red-600">
+                  <p>{statusMutation.error.message}</p>
+                  <ul className="mt-1 list-inside list-disc">
+                    {getFieldErrors(statusMutation.error).lineup?.map((problem) => (
+                      <li key={problem}>{problem}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(match.events || match.status === "playing" || match.status === "finished") && (
+            <MatchEventsPanel teamId={team._id} match={match} canEdit={canRecord} />
           )}
         </>
       )}

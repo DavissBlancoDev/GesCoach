@@ -22,6 +22,37 @@ type SortKey =
   | keyof PlayerStats;
 type SortDirection = "asc" | "desc";
 
+function SortHeader({
+  label,
+  sort,
+  selected,
+  direction,
+  onSort,
+  title,
+}: {
+  label: string;
+  sort: SortKey;
+  selected: boolean;
+  direction: SortDirection;
+  onSort: (sort: SortKey) => void;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(sort)}
+      aria-label={`Ordenar por ${label}`}
+      title={title}
+      className="inline-flex items-center gap-1 font-semibold hover:text-green-700"
+    >
+      {label}
+      <span className={selected ? "text-green-700" : "text-gray-400"} aria-hidden="true">
+        {selected ? (direction === "asc" ? "↑" : "↓") : "↕"}
+      </span>
+    </button>
+  );
+}
+
 /**
  * Plantilla en formato tabla, a todo el ancho: dorsal, nombre futbolístico,
  * bandera, posición y estadísticas. Pulsar una fila abre la ficha del
@@ -85,34 +116,6 @@ function SquadTable({ players, showStats }: SquadTableProps) {
     setSortDirection("asc");
   }
 
-  function SortHeader({
-    label,
-    sort,
-    className = "",
-    title,
-  }: {
-    label: string;
-    sort: SortKey;
-    className?: string;
-    title?: string;
-  }) {
-    const selected = sort === sortKey;
-    return (
-      <button
-        type="button"
-        onClick={() => changeSort(sort)}
-        aria-label={`Ordenar por ${label}`}
-        title={title}
-        className={`inline-flex items-center gap-1 font-semibold hover:text-green-700 ${className}`}
-      >
-        {label}
-        <span className={selected ? "text-green-700" : "text-gray-400"} aria-hidden="true">
-          {selected ? (sortDirection === "asc" ? "↑" : "↓") : "↕"}
-        </span>
-      </button>
-    );
-  }
-
   return (
     <>
       <div className="overflow-x-auto rounded border border-gray-200">
@@ -120,19 +123,19 @@ function SquadTable({ players, showStats }: SquadTableProps) {
           <thead className="bg-gray-50 text-gray-600">
             <tr>
               <th className="px-2 py-2 text-left sm:px-3">
-                <SortHeader label="Dorsal" sort="jerseyNumber" />
+                <SortHeader label="Dorsal" sort="jerseyNumber" selected={sortKey === "jerseyNumber"} direction={sortDirection} onSort={changeSort} />
               </th>
               <th className="sticky left-0 z-10 bg-gray-50 px-2 py-2 text-left sm:px-3">
-                <SortHeader label="Jugador" sort="player" />
+                <SortHeader label="Jugador" sort="player" selected={sortKey === "player"} direction={sortDirection} onSort={changeSort} />
               </th>
               <th className="px-1 py-2 text-center sm:px-2">
-                <SortHeader label="Nac." sort="nationality" title="Nacionalidad" />
+                <SortHeader label="Nac." sort="nationality" title="Nacionalidad" selected={sortKey === "nationality"} direction={sortDirection} onSort={changeSort} />
               </th>
               <th className="px-1 py-2 text-left sm:px-2">
-                <SortHeader label="Pos" sort="mainPosition" title="Posición" />
+                <SortHeader label="Pos" sort="mainPosition" title="Posición" selected={sortKey === "mainPosition"} direction={sortDirection} onSort={changeSort} />
               </th>
               <th className="hidden px-2 py-2 text-left md:table-cell">
-                <SortHeader label="Ficha" sort="license" />
+                <SortHeader label="Ficha" sort="license" selected={sortKey === "license"} direction={sortDirection} onSort={changeSort} />
               </th>
               {showStats &&
                 STAT_COLUMNS.map((col) => (
@@ -143,7 +146,7 @@ function SquadTable({ players, showStats }: SquadTableProps) {
                       col.hideOnMobile ? "hidden md:table-cell" : ""
                     }`}
                   >
-                    <SortHeader label={col.header} sort={col.key} title={col.title} />
+                    <SortHeader label={col.header} sort={col.key} title={col.title} selected={sortKey === col.key} direction={sortDirection} onSort={changeSort} />
                   </th>
                 ))}
             </tr>

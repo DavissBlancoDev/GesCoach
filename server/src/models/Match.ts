@@ -10,11 +10,29 @@ export const MATCH_STATUSES = ["pending", "playing", "finished"] as const;
 export type MatchCompetition = (typeof MATCH_COMPETITIONS)[number];
 export type MatchStatus = (typeof MATCH_STATUSES)[number];
 
+export const MATCH_EVENT_TYPES = ["goal", "yellow_card", "red_card", "substitution"] as const;
+export type MatchEventType = (typeof MATCH_EVENT_TYPES)[number];
+export const MATCH_EVENT_SIDES = ["for", "against"] as const;
+export type MatchEventSide = (typeof MATCH_EVENT_SIDES)[number];
+
 // Un convocado y su papel en la alineación
 interface ICallupEntry {
   player: Types.ObjectId;
   jerseyNumber?: number;
   starter: boolean;
+}
+
+interface IMatchEvent {
+  _id?: Types.ObjectId;
+  type: MatchEventType;
+  minute: number;
+  side?: MatchEventSide;
+  player?: Types.ObjectId;
+  assist?: Types.ObjectId;
+  playerIn?: Types.ObjectId;
+  playerOut?: Types.ObjectId;
+  penalty: boolean;
+  ownGoal: boolean;
 }
 
 interface IMatch {
@@ -34,6 +52,7 @@ interface IMatch {
   goalsAgainst?: number;
   goalkeeper?: Types.ObjectId;
   callup: ICallupEntry[];
+  events: IMatchEvent[];
 }
 
 /**
@@ -49,6 +68,21 @@ const callupSchema = new Schema<ICallupEntry>(
     starter: { type: Boolean, default: false },
   },
   { _id: false }
+);
+
+const eventSchema = new Schema<IMatchEvent>(
+  {
+    type: { type: String, enum: MATCH_EVENT_TYPES, required: true },
+    minute: { type: Number, min: 0, max: 120, required: true },
+    side: { type: String, enum: MATCH_EVENT_SIDES },
+    player: { type: Schema.Types.ObjectId, ref: "Player" },
+    assist: { type: Schema.Types.ObjectId, ref: "Player" },
+    playerIn: { type: Schema.Types.ObjectId, ref: "Player" },
+    playerOut: { type: Schema.Types.ObjectId, ref: "Player" },
+    penalty: { type: Boolean, default: false },
+    ownGoal: { type: Boolean, default: false },
+  },
+  { timestamps: true }
 );
 
 /**
@@ -79,6 +113,7 @@ const matchSchema = new Schema<IMatch>(
     goalsAgainst: { type: Number, min: 0, max: 99 },
     goalkeeper: { type: Schema.Types.ObjectId, ref: "Player" },
     callup: { type: [callupSchema], default: [] },
+    events: { type: [eventSchema], default: [] },
   },
   { timestamps: true }
 );

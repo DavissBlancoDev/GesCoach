@@ -53,7 +53,7 @@ function LandingPage() {
             <span className="h-2 w-2 rounded-full bg-[#c5e94f]" />
             Gestión deportiva sin complicaciones
           </p>
-          <h1 className="max-w-xl text-5xl font-semibold leading-[0.98] tracking-[-0.05em] sm:text-6xl lg:text-7xl">
+          <h1 className="max-w-xl text-5xl font-semibold leading-[0.98] tracking-tighter sm:text-6xl lg:text-7xl">
             Entrena mejor. <span className="text-[#6c9b48]">Crece juntos.</span>
           </h1>
           <p className="mt-7 max-w-lg text-lg leading-8 text-[#64726a]">
@@ -77,7 +77,7 @@ function LandingPage() {
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-[530px] lg:mt-4">
+        <div className="relative mx-auto w-full max-w-132.5 lg:mt-4">
           <div className="absolute -right-5 -top-8 h-44 w-44 rounded-full bg-[#dff18d] blur-3xl" />
           <div className="absolute -bottom-10 -left-10 h-48 w-48 rounded-full bg-[#cfe4d6] blur-3xl" />
           <div className="relative rounded-[28px] border border-white/80 bg-[#173b2b] p-3 shadow-[0_30px_70px_rgba(35,69,48,0.22)] sm:p-4">

@@ -5,6 +5,21 @@ export type MatchCompetition = "league" | "cup" | "tournament" | "friendly";
 export type MatchVenue = "home" | "away" | "neutral";
 export type MatchStatus = "pending" | "playing" | "finished";
 export type MatchResult = "win" | "draw" | "loss";
+export type MatchEventType = "goal" | "yellow_card" | "red_card" | "substitution";
+export type MatchEventSide = "for" | "against";
+
+export interface MatchEvent {
+  id: string;
+  type: MatchEventType;
+  minute: number;
+  side?: MatchEventSide;
+  player?: string;
+  assist?: string;
+  playerIn?: string;
+  playerOut?: string;
+  penalty: boolean;
+  ownGoal: boolean;
+}
 
 export interface Opponent {
   id: string;
@@ -47,6 +62,7 @@ export interface Match {
   maxCallup: number | null; // null = sin límite
   callup?: string[]; // identificadores de los jugadores convocados
   lineup?: Lineup;
+  events?: MatchEvent[];
 }
 
 // Datos que envía el formulario al programar o editar un partido
@@ -123,3 +139,26 @@ export const saveLineup = (teamId: string, matchId: string, data: LineupData) =>
     method: "PUT",
     body: JSON.stringify(data),
   });
+
+export interface MatchEventData {
+  type: MatchEventType;
+  minute: number;
+  side?: MatchEventSide;
+  player?: string;
+  assist?: string;
+  playerIn?: string;
+  playerOut?: string;
+  penalty?: boolean;
+  ownGoal?: boolean;
+}
+
+/** Añade un evento al acta del partido. */
+export const addMatchEvent = (teamId: string, matchId: string, data: MatchEventData) =>
+  api<{ id: string }>(`${base(teamId)}/${matchId}/events`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+/** Elimina un evento del acta. */
+export const deleteMatchEvent = (teamId: string, matchId: string, eventId: string) =>
+  api<void>(`${base(teamId)}/${matchId}/events/${eventId}`, { method: "DELETE" });

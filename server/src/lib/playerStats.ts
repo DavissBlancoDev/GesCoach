@@ -1,4 +1,5 @@
 import type { Types } from "mongoose";
+import { Match } from "../models/Match";
 
 /**
  * Estadísticas de un jugador en una temporada.
@@ -41,8 +42,68 @@ export const emptyStats = (): PlayerStats => ({
  * y actas, el cálculo se hará aquí y el resto de la aplicación no cambia.
  */
 export async function getSeasonStats(
-  _seasonId: Types.ObjectId,
-  _playerIds: string[]
+  seasonId: Types.ObjectId,
+  playerIds: string[]
 ): Promise<Map<string, PlayerStats>> {
-  return new Map();
+  const result = new Map<string, PlayerStats>();
+  if (playerIds.length === 0) return result;
+
+  const requested = new Set(playerIds);
+  const matches = await Match.find({
+    season: seasonId,
+    status: { $in: ["playing", "finished"] },
+  }).lean();
+
+  for (const match of matches) {
+    const callup = match.callup ?? [];
+    const calledIds = new Set(callup.map((entry) => entry.player.toString()));
+    const starters = new Set(
+      callup.filter((entry) => entry.starter).map((entry) => entry.player.toString())
+    );
+    const substitutionsIn = new Set(
+      (match.events ?? [])
+        .filter((event) => event.type === "substitution" && event.playerIn)
+        .map((event) => event.playerIn!.toString())
+    );
+
+    for (const playerId of calledIds) {
+      if (!requested.has(playerId)) continue;
+      const stats = result.get(playerId) ?? emptyStats();
+      stats.calledUp += 1;
+      if (starters.has(playerId)) stats.started += 1;
+
+      if (starters.has(playerId) || substitutionsIn.has(playerId)) {
+        stats.played += 1;
+        const duration = match.durationMinutes ?? 90;
+        const outgoing = (match.events ?? [])
+          .filter((event) => event.type === "substitution" && event.playerOut?.toString() === playerId)
+          .sort((a, b) => a.minute - b.minute)[0];
+        const incoming = (match.events ?? [])
+          .filter((event) => event.type === "substitution" && event.playerIn?.toString() === playerId)
+          .sort((a, b) => a.minute - b.minute)[0];
+        stats.minutes += outgoing?.minute ?? (incoming ? Math.max(0, duration - incoming.minute) : duration);
+      }
+
+      for (const event of match.events ?? []) {
+        if (event.type === "goal" && event.side === "for" && !event.ownGoal) {
+          if (event.player?.toString() === playerId) stats.goals += 1;
+          if (event.assist?.toString() === playerId) stats.assists += 1;
+        }
+        if (event.type === "yellow_card" && event.player?.toString() === playerId) {
+          stats.yellowCards += 1;
+        }
+        if (event.type === "red_card" && event.player?.toString() === playerId) {
+          stats.redCards += 1;
+        }
+      }
+
+      if (match.goalkeeper?.toString() === playerId && match.status === "finished") {
+        if ((match.goalsAgainst ?? 0) === 0) stats.cleanSheets += 1;
+        stats.goalsConceded += match.goalsAgainst ?? 0;
+      }
+      result.set(playerId, stats);
+    }
+  }
+
+  return result;
 }

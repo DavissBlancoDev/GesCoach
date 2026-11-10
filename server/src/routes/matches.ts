@@ -9,6 +9,8 @@ import {
   MATCH_COMPETITIONS,
   MATCH_VENUES,
   MATCH_STATUSES,
+  MATCH_EVENT_TYPES,
+  MATCH_EVENT_SIDES,
   type MatchStatus,
 } from "../models/Match";
 import { Opponent } from "../models/Opponent";
@@ -101,6 +103,33 @@ const lineupSchema = z
     path: ["players"],
   });
 
+const eventSchema = z
+  .object({
+    type: z.enum(MATCH_EVENT_TYPES),
+    minute: z.number().int().min(0).max(120),
+    side: z.enum(MATCH_EVENT_SIDES).optional(),
+    player: objectId.optional(),
+    assist: objectId.optional(),
+    playerIn: objectId.optional(),
+    playerOut: objectId.optional(),
+    penalty: z.boolean().default(false),
+    ownGoal: z.boolean().default(false),
+  })
+  .superRefine((event, ctx) => {
+    if (event.type === "goal" && !event.side) {
+      ctx.addIssue({ code: "custom", path: ["side"], message: "Indica de qué equipo es el gol" });
+    }
+    if ((event.type === "yellow_card" || event.type === "red_card") && !event.player) {
+      ctx.addIssue({ code: "custom", path: ["player"], message: "Indica el jugador" });
+    }
+    if (event.type === "substitution" && (!event.playerIn || !event.playerOut)) {
+      ctx.addIssue({ code: "custom", path: ["playerIn"], message: "Indica quién entra y quién sale" });
+    }
+    if (event.type !== "goal" && (event.side || event.assist || event.penalty || event.ownGoal)) {
+      ctx.addIssue({ code: "custom", message: "Esos datos solo se aplican a los goles" });
+    }
+  });
+
 // Estados a los que se puede pasar desde cada uno. Un partido finalizado se
 // puede reabrir (a "jugando") para corregir el resultado.
 const NEXT_STATUSES: Record<MatchStatus, MatchStatus[]> = {
@@ -162,6 +191,20 @@ function toMatchItem(
     goalsFor: match.goalsFor,
     goalsAgainst: match.goalsAgainst,
     result: resultOf(match),
+    events: canSee
+      ? match.events.map((event) => ({
+          id: event._id?.toString() ?? "",
+          type: event.type,
+          minute: event.minute,
+          side: event.side,
+          player: event.player?.toString(),
+          assist: event.assist?.toString(),
+          playerIn: event.playerIn?.toString(),
+          playerOut: event.playerOut?.toString(),
+          penalty: event.penalty,
+          ownGoal: event.ownGoal,
+        }))
+      : undefined,
     maxCallup: MAX_CALLUP[match.competition],
     callup: canSee ? match.callup.map((c) => c.player.toString()) : undefined,
     lineup: canSee
@@ -630,6 +673,72 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
       squad
     )
   );
+});
+
+/** Añade un evento al acta mientras el partido está en juego. */
+router.post<MatchParams>("/:matchId/events", async (req, res) => {
+  const role = res.locals.role as Role;
+  if (!canRecordMatch(role)) {
+    return res.status(403).json({ error: "No tienes permiso para registrar eventos" });
+  }
+
+  const parsed = eventSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Datos no válidos", details: parsed.error.flatten().fieldErrors });
+  }
+
+  const match = await findMatch(req.params.teamId, req.params.matchId);
+  if (!match) return res.status(404).json({ error: "Partido no encontrado" });
+  if (match.status !== "playing") {
+    return res.status(409).json({ error: "Los eventos solo se pueden registrar mientras se juega" });
+  }
+
+  const event = parsed.data;
+  const calledUp = new Set(match.callup.map((entry) => entry.player.toString()));
+  const involved = [event.player, event.assist, event.playerIn, event.playerOut].filter(Boolean) as string[];
+  if (involved.some((id) => !calledUp.has(id))) {
+    return res.status(400).json({ error: "El jugador debe pertenecer a la convocatoria" });
+  }
+  if (event.assist && event.assist === event.player) {
+    return res.status(400).json({ error: "El goleador y el asistente deben ser distintos" });
+  }
+  if (event.playerIn && event.playerIn === event.playerOut) {
+    return res.status(400).json({ error: "El jugador que entra y el que sale deben ser distintos" });
+  }
+
+  match.events.push({
+    ...event,
+    player: event.player ? new mongoose.Types.ObjectId(event.player) : undefined,
+    assist: event.assist ? new mongoose.Types.ObjectId(event.assist) : undefined,
+    playerIn: event.playerIn ? new mongoose.Types.ObjectId(event.playerIn) : undefined,
+    playerOut: event.playerOut ? new mongoose.Types.ObjectId(event.playerOut) : undefined,
+  });
+  if (event.type === "goal") {
+    if (event.side === "for") match.goalsFor = (match.goalsFor ?? 0) + 1;
+    if (event.side === "against") match.goalsAgainst = (match.goalsAgainst ?? 0) + 1;
+  }
+  await match.save();
+  const savedEvent = match.events[match.events.length - 1];
+  return res.status(201).json({ id: savedEvent._id?.toString() ?? "" });
+});
+
+/** Elimina un evento y ajusta el marcador si era un gol. */
+router.delete<MatchParams & { eventId: string }>("/:matchId/events/:eventId", async (req, res) => {
+  const role = res.locals.role as Role;
+  if (!canRecordMatch(role)) return res.status(403).json({ error: "No tienes permiso para editar eventos" });
+  const match = await findMatch(req.params.teamId, req.params.matchId);
+  if (!match) return res.status(404).json({ error: "Partido no encontrado" });
+  if (match.status !== "playing") return res.status(409).json({ error: "Solo se pueden editar eventos mientras se juega" });
+
+  const event = match.events.find((item) => item._id?.toString() === req.params.eventId);
+  if (!event) return res.status(404).json({ error: "Evento no encontrado" });
+  if (event.type === "goal") {
+    if (event.side === "for") match.goalsFor = Math.max(0, (match.goalsFor ?? 0) - 1);
+    if (event.side === "against") match.goalsAgainst = Math.max(0, (match.goalsAgainst ?? 0) - 1);
+  }
+  match.events.splice(match.events.indexOf(event), 1);
+  await match.save();
+  return res.status(204).send();
 });
 
 /**
