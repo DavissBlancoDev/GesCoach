@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { Match } from "../api/matches";
 import type { Training } from "../api/trainings";
+import type { CalendarNote } from "../api/calendarNotes";
 import { buildEvents, dayHeading } from "../lib/calendar";
 import { weekDays } from "../lib/dashboard";
 import { todayIso } from "../lib/trainings";
@@ -10,6 +11,7 @@ interface WeekCalendarProps {
   trainings: Training[];
   matches: Match[];
   division: string;
+  notes?: CalendarNote[];
 }
 
 const SHORT_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -19,10 +21,10 @@ const SHORT_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
  * partidos. En pantallas anchas se ve en siete columnas, y en el móvil como
  * una lista de siete días, igual que el calendario mensual.
  */
-function WeekCalendar({ trainings, matches, division }: WeekCalendarProps) {
+function WeekCalendar({ trainings, matches, division, notes = [] }: WeekCalendarProps) {
   const today = todayIso();
   const days = weekDays(today);
-  const events = buildEvents(trainings, matches, division);
+  const events = buildEvents(trainings, matches, division, notes);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   return (
@@ -52,19 +54,28 @@ function WeekCalendar({ trainings, matches, division }: WeekCalendarProps) {
               </p>
 
               <div className="space-y-1">
-                {dayEvents.map((event) => (
-                  <Link
-                    key={event.key}
-                    to={event.href}
-                    title={event.title}
-                    className={`block truncate rounded border px-1 py-0.5 text-xs ${event.className}`}
-                  >
-                    {event.time && (
-                      <span className="font-semibold">{event.time} </span>
-                    )}
-                    {event.label}
-                  </Link>
-                ))}
+                {dayEvents.map((event) =>
+                  event.kind === "note" ? (
+                    <div
+                      key={event.key}
+                      title={event.title}
+                      className={`block truncate rounded border px-1 py-0.5 text-xs ${event.className}`}
+                    >
+                      {event.time && <span className="font-semibold">{event.time} </span>}
+                      {event.label}
+                    </div>
+                  ) : (
+                    <Link
+                      key={event.key}
+                      to={event.href}
+                      title={event.title}
+                      className={`block truncate rounded border px-1 py-0.5 text-xs ${event.className}`}
+                    >
+                      {event.time && <span className="font-semibold">{event.time} </span>}
+                      {event.label}
+                    </Link>
+                  ),
+                )}
 
                 {dayEvents.length === 0 && (
                   <button
@@ -113,19 +124,26 @@ function WeekCalendar({ trainings, matches, division }: WeekCalendarProps) {
                 <ul className="mt-1 space-y-1">
                   {dayEvents.map((event) => (
                     <li key={event.key}>
-                      <Link
-                        to={event.href}
-                        title={event.title}
-                        className={`flex items-center gap-2 rounded border p-2 ${event.className}`}
-                      >
-                        <span className="w-20 shrink-0 text-xs font-semibold">
-                          {event.time ??
-                            (event.kind === "match" ? "Por confirmar" : "")}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate">
-                          {event.label}
-                        </span>
-                      </Link>
+                      {event.kind === "note" ? (
+                        <div
+                          title={event.title}
+                          className={`flex items-center gap-2 rounded border p-2 ${event.className}`}
+                        >
+                          <span className="w-20 shrink-0 text-xs font-semibold">{event.time ?? ""}</span>
+                          <span className="min-w-0 flex-1 truncate">{event.label}</span>
+                        </div>
+                      ) : (
+                        <Link
+                          to={event.href}
+                          title={event.title}
+                          className={`flex items-center gap-2 rounded border p-2 ${event.className}`}
+                        >
+                          <span className="w-20 shrink-0 text-xs font-semibold">
+                            {event.time ?? (event.kind === "match" ? "Por confirmar" : "")}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate">{event.label}</span>
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>

@@ -4,6 +4,7 @@ import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { useMatches } from "../hooks/useMatches";
 import { usePlayers } from "../hooks/usePlayers";
 import { useTrainings } from "../hooks/useTrainings";
+import { useCalendarNotes } from "../hooks/useCalendarNotes";
 import { seasonLabel } from "../lib/teams";
 import { canEditCallup, canManageMatches, canRecordMatch, finishedNewestFirst, nextMatch } from "../lib/matches";
 import { canManageTrainings } from "../lib/trainings";
@@ -33,6 +34,7 @@ function DashboardPage() {
   const players = usePlayers(teamId);
   const matches = useMatches(teamId);
   const trainings = useTrainings(teamId);
+  const calendarNotes = useCalendarNotes(teamId);
   const navigate = useNavigate();
 
   if (!current?.team || !current.currentSeason) return <p className="p-6">Cargando...</p>;
@@ -50,14 +52,14 @@ function DashboardPage() {
   });
   const today = todayText.charAt(0).toUpperCase() + todayText.slice(1);
 
-  if (players.isPending || matches.isPending || trainings.isPending) {
+  if (players.isPending || matches.isPending || trainings.isPending || calendarNotes.isPending) {
     return <p className="p-6">Cargando el dashboard...</p>;
   }
 
   const playerList = players.data ?? [];
   const matchList = matches.data ?? [];
   const trainingList = trainings.data ?? [];
-  const failed = players.isError || matches.isError || trainings.isError;
+  const failed = players.isError || matches.isError || trainings.isError || calendarNotes.isError;
 
   const next = nextMatch(matchList);
   const last = finishedNewestFirst(matchList)[0];
@@ -124,6 +126,7 @@ function DashboardPage() {
             trainings={trainingList}
             matches={matchList}
             division={season.division}
+            notes={calendarNotes.data ?? []}
           />
         </div>
 
