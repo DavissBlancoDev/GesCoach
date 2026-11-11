@@ -4,8 +4,10 @@ import UserMenu from "./UserMenu";
 
 // Estilo de cada enlace según esté activo o no
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded px-3 py-1 text-sm ${
-    isActive ? "bg-green-700 text-white" : "text-gray-700 hover:bg-gray-100"
+  `whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+    isActive
+      ? "bg-green-700 text-white shadow-sm"
+      : "text-gray-600 hover:bg-white hover:text-green-800"
   }`;
 
 /**
@@ -18,14 +20,24 @@ function AppLayout() {
 
   return (
     <>
-      <header className="border-b border-gray-200">
-        <div className="mx-auto max-w-5xl p-3">
+      <header className="border-b border-gray-200 bg-white shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="min-w-0 truncate font-bold">GesCoach - {current?.team?.name}</span>
-            <div className="flex items-center gap-1">
+            <Link to="/dashboard" className="flex min-w-0 items-center gap-3">
+              <img
+                src="/favicon.png"
+                alt="GesCoach"
+                className="h-10 w-10 shrink-0 rounded-xl bg-black p-1 object-contain shadow-sm"
+              />
+              <span className="min-w-0 truncate text-base font-bold tracking-tight text-gray-900">
+                GesCoach <span className="font-normal text-gray-400">·</span>{" "}
+                <span className="text-green-800">{current?.team?.name}</span>
+              </span>
+            </Link>
+            <div className="flex items-center gap-2">
               <Link
                 to="/"
-                className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50"
+                className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:border-green-200 hover:bg-green-50 hover:text-green-800"
               >
                 Cambiar de equipo
               </Link>
@@ -33,7 +45,7 @@ function AppLayout() {
             </div>
           </div>
           {/* Los enlaces saltan de línea si no caben, por ejemplo en el móvil */}
-          <nav className="mt-2 flex flex-wrap gap-1">
+          <nav className="mt-4 flex gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1">
             <NavLink to="/dashboard" className={linkClass}>
               Dashboard
             </NavLink>
