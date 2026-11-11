@@ -23,7 +23,7 @@ El equipo elegido se guarda en el navegador (solo su identificador), no en la di
 | `/plantilla` y `/plantilla/:playerId` | Plantilla y ficha del jugador | Con equipo elegido |
 | `/entrenos` y `/entrenos/:trainingId` | Entrenos y pase de lista | Con equipo elegido |
 | `/partidos` y `/partidos/:matchId` | Partidos y ficha del partido | Con equipo elegido |
-| `/calendario` | Calendario mensual | Con equipo elegido |
+| `/calendario` | Calendario mensual y notas/eventos | Con equipo elegido |
 | `/perfil` | Mi perfil | Con equipo elegido |
 | `/ajustes` | Ajustes del club | Con equipo elegido |
 
@@ -42,7 +42,7 @@ Todo se calcula con los datos que ya cargan las demás pantallas, y cada rol ve 
 | Bienvenida | "Hola, [nombre] - [equipo]", y debajo la fecha de hoy y la temporada |
 | Plantilla | Jugadores en plantilla (todos, incluidos los inactivos), lesionados, sancionados e inactivos, y cuántos están disponibles |
 | Partidos | Partidos finalizados de **todos los tipos** y su récord (victorias, empates y derrotas) |
-| Puntos de liga | 3 puntos por victoria y 1 por empate, sobre el máximo posible (3 por partido). **Solo cuentan los partidos de liga** finalizados: copa, torneo y amistosos no suman |
+| Puntos de liga | 3 puntos por victoria y 1 por empate, sobre el máximo posible (3 por partido). **Solo cuentan los partidos de liga** finalizados: copa, torneo y amistosos no suman. Debajo se muestra la media de puntos por partido |
 | Próximo partido | El que se está jugando o, si no hay, el pendiente más cercano en el tiempo (aunque su fecha ya haya pasado). Sin ninguno, un mensaje y el botón de programar partido, que abre el formulario |
 | Último partido | El finalizado más reciente |
 | Esta semana | Los siete días de la semana actual, de lunes a domingo, con entrenos y partidos |
@@ -58,6 +58,22 @@ Tareas pendientes (cada una lleva a la pantalla donde se resuelve, y solo se mue
 | Entreno sin pasar lista | Entreno programado con la fecha pasada |
 
 Hasta que se registren las amarillas (con el acta del partido), el bloque de riesgo de sanción estará vacío, porque todos los jugadores tienen cero.
+
+## Calendario
+
+- Todas las casillas de días son seleccionables; los días sin elementos muestran un signo + para crear una nota o evento.
+- La vista previa del día seleccionado aparece a la derecha del calendario en pantallas anchas y debajo en pantallas estrechas.
+- Se muestran entrenos, partidos y notas/eventos personalizados, ordenados por hora.
+- Las notas tienen título obligatorio, hora opcional y detalles opcionales. El entrenador principal y el segundo entrenador pueden crearlas y eliminarlas.
+- Los partidos y entrenos enlazan con su detalle; las notas se gestionan desde la vista previa del día.
+
+## Detalle del partido
+
+- La convocatoria permite seleccionar jugadores, desmarcar a todos y exportar la lista numerada al portapapeles con nombre y primer apellido.
+- La alineación se construye a partir de la convocatoria: titulares, suplentes, portero y dorsales específicos del partido.
+- Mientras el partido está en juego se pueden registrar goles, goles de penalti, goles en propia, tarjetas amarillas o rojas y sustituciones.
+- Los goles del rival admiten opcionalmente su dorsal. Los eventos se muestran alrededor del minuto, con el jugador y el tipo de evento.
+- Los minutos de los jugadores se calculan a partir de intervalos de juego, por lo que las entradas y salidas repetidas en partidos con cambios ilimitados se contabilizan correctamente.
 
 ## Mi perfil
 

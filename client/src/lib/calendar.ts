@@ -3,7 +3,7 @@ import type { Training } from "../api/trainings";
 import type { CalendarNote } from "../api/calendarNotes";
 import { RESULT_STYLES, VENUE_ICONS, competitionLabel } from "./matches";
 
-// Un elemento del calendario: un entreno o un partido
+// Un elemento del calendario: un entreno, un partido o una nota personalizada
 export interface CalendarEvent {
   key: string;
   kind: "training" | "match" | "note";

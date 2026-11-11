@@ -30,24 +30,24 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 - [x] ⚽ Partidos programados a mano: tipo (liga, copa, torneo o amistoso), rival, sede, fecha, hora opcional y lugar
 - [x] 🔄 Estados del partido (pendiente, jugando y finalizado) y resultado en directo
 - [x] 📋 Convocatoria agrupada por posiciones, con el máximo de 16 en liga
+- [x] 📝 Exportación de la convocatoria al portapapeles y desmarcado rápido de todos los jugadores
+- [x] 🧤 Alineación del partido: titulares, suplentes, portero y dorsales específicos del partido
+- [x] ⚽ Acta en directo: goles, penaltis, goles en propia, tarjetas y cambios
+- [x] 🔁 Minutos de juego calculados por intervalos, incluyendo entradas y salidas repetidas
 - [x] 📊 Pantalla de partidos: último partido, próximo, recientes con color según el resultado y listado completo
-- [x] 📅 Calendario mensual con entrenos y partidos (cuadrícula en pantallas anchas y lista por días en el móvil)
+- [x] 📅 Calendario mensual con entrenos, partidos y notas/eventos personalizados, con vista previa del día seleccionado
 - [x] 🏠 Varios equipos por usuario: pantalla de inicio para elegir equipo y cambiar de equipo en cualquier momento
-- [x] 📈 Dashboard: plantilla y récord, puntos de liga, próximo y último partido, calendario de la semana, tareas pendientes y riesgo de sanción
+- [x] 📈 Dashboard: plantilla y récord, puntos y media de puntos de liga, próximo y último partido, calendario de la semana, tareas pendientes y riesgo de sanción
 - [x] ⚙️ Ajuste de las amarillas que suponen una sanción (por temporada)
 - [x] 👤 Menú de usuario y Mi perfil: datos personales, correo y contraseña
 - [x] 🏟️ Ajustes del club: equipo, colores, ubicación y miembros
-
-### 🔨 En curso
-
-- [ ] 📝 Alineación por formaciones y acta del partido (goleadores, asistentes, tarjetas y cambios)
 
 ### 🔮 Previsto
 
 - [ ] 🏁 Finalizar temporada y consulta del histórico
 - [ ] 🏆 Competiciones con su calendario de jornadas y clasificación calculada
 - [ ] 📄 Importación de jornadas desde los PDF de la federación, con vista previa antes de guardar
-- [ ] 📊 Estadísticas de jugadores y de equipo
+- [ ] 📊 Estadísticas avanzadas adicionales de jugadores y de equipo
 - [ ] 💌 Invitaciones por enlace (un solo uso, caducan a los 7 días) y permisos por rol
 - [ ] 🔑 Recuperar la contraseña por email (enlace de un solo uso con caducidad)
 - [ ] 🌐 Iniciar sesión con Google y otras redes sociales
@@ -55,13 +55,13 @@ GesCoach nace de una necesidad real: llevar un equipo de fútbol 11 sin depender
 
 ## 🛠️ Stack
 
-| Parte | Tecnología |
-| --- | --- |
-| 🎨 Cliente | React, TypeScript, Vite, React Router, TanStack Query, Tailwind CSS |
-| ⚙️ Servidor | Node.js, Express, TypeScript |
-| 🍃 Base de datos | MongoDB (Atlas) con Mongoose |
-| ✔️ Validación | Zod |
-| 🔑 Autenticación | JWT en cookie `httpOnly`, contraseñas con bcryptjs |
+| Parte            | Tecnología                                                          |
+| ---------------- | ------------------------------------------------------------------- |
+| 🎨 Cliente       | React, TypeScript, Vite, React Router, TanStack Query, Tailwind CSS |
+| ⚙️ Servidor      | Node.js, Express, TypeScript                                        |
+| 🍃 Base de datos | MongoDB (Atlas) con Mongoose                                        |
+| ✔️ Validación    | Zod                                                                 |
+| 🔑 Autenticación | JWT en cookie `httpOnly`, contraseñas con bcryptjs                  |
 
 ## 🧰 Tecnologías usadas
 
@@ -69,47 +69,47 @@ Detalle de las herramientas y librerías del proyecto, y para qué se usa cada u
 
 ### 🎨 Cliente
 
-| Tecnología | Para qué se usa |
-| --- | --- |
-| React | Interfaz basada en componentes |
-| TypeScript | Tipado estático: los errores se detectan al escribir, antes de ejecutar |
-| Vite | Servidor de desarrollo con recarga en caliente, empaquetado y proxy hacia la API |
-| React Router | Navegación entre pantallas y rutas protegidas por sesión |
+| Tecnología     | Para qué se usa                                                                     |
+| -------------- | ----------------------------------------------------------------------------------- |
+| React          | Interfaz basada en componentes                                                      |
+| TypeScript     | Tipado estático: los errores se detectan al escribir, antes de ejecutar             |
+| Vite           | Servidor de desarrollo con recarga en caliente, empaquetado y proxy hacia la API    |
+| React Router   | Navegación entre pantallas y rutas protegidas por sesión                            |
 | TanStack Query | Estado del servidor: caché, estados de carga y gestión de errores en las peticiones |
-| Tailwind CSS | Estilos con clases utilitarias, con un diseño pensado primero para móvil |
+| Tailwind CSS   | Estilos con clases utilitarias, con un diseño pensado primero para móvil            |
 
 ### ⚙️ Servidor
 
-| Tecnología | Para qué se usa |
-| --- | --- |
-| Node.js | Entorno de ejecución |
-| Express | API REST: rutas, middlewares y control de acceso |
-| TypeScript | Tipado estático, compartido con el cliente en los conceptos de dominio |
-| tsx | Ejecuta TypeScript en desarrollo y reinicia el servidor al guardar |
-| Zod | Validación de los datos de entrada antes de tocar la base de datos |
-| jsonwebtoken | Firma y verificación de los tokens de sesión |
-| bcryptjs | Hash de contraseñas, en JavaScript puro (sin compilación nativa) |
-| cookie-parser | Lectura de la cookie de sesión |
-| cors | Control de los orígenes que pueden llamar a la API |
-| dotenv | Carga de variables de entorno desde `.env` |
+| Tecnología    | Para qué se usa                                                        |
+| ------------- | ---------------------------------------------------------------------- |
+| Node.js       | Entorno de ejecución                                                   |
+| Express       | API REST: rutas, middlewares y control de acceso                       |
+| TypeScript    | Tipado estático, compartido con el cliente en los conceptos de dominio |
+| tsx           | Ejecuta TypeScript en desarrollo y reinicia el servidor al guardar     |
+| Zod           | Validación de los datos de entrada antes de tocar la base de datos     |
+| jsonwebtoken  | Firma y verificación de los tokens de sesión                           |
+| bcryptjs      | Hash de contraseñas, en JavaScript puro (sin compilación nativa)       |
+| cookie-parser | Lectura de la cookie de sesión                                         |
+| cors          | Control de los orígenes que pueden llamar a la API                     |
+| dotenv        | Carga de variables de entorno desde `.env`                             |
 
 ### 🍃 Base de datos
 
-| Tecnología | Para qué se usa |
-| --- | --- |
+| Tecnología    | Para qué se usa                                     |
+| ------------- | --------------------------------------------------- |
 | MongoDB Atlas | Base de datos documental en la nube (plan gratuito) |
-| Mongoose | Modelos, validación, índices únicos y transacciones |
+| Mongoose      | Modelos, validación, índices únicos y transacciones |
 
 ### 🧪 Herramientas de desarrollo
 
-| Herramienta | Para qué se usa |
-| --- | --- |
-| pnpm | Gestor de paquetes. Espera antes de instalar versiones recién publicadas y bloquea por defecto los scripts de instalación |
-| ESLint | Análisis estático del código |
-| Git y GitHub | Control de versiones y alojamiento del repositorio |
-| VS Code | Editor |
-| Thunder Client | Probar la API desde el propio editor |
-| MongoDB Compass | Explorar y revisar los datos de la base de datos |
+| Herramienta     | Para qué se usa                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| pnpm            | Gestor de paquetes. Espera antes de instalar versiones recién publicadas y bloquea por defecto los scripts de instalación |
+| ESLint          | Análisis estático del código                                                                                              |
+| Git y GitHub    | Control de versiones y alojamiento del repositorio                                                                        |
+| VS Code         | Editor                                                                                                                    |
+| Thunder Client  | Probar la API desde el propio editor                                                                                      |
+| MongoDB Compass | Explorar y revisar los datos de la base de datos                                                                          |
 
 ### 🔜 Previstas
 
@@ -120,12 +120,14 @@ Detalle de las herramientas y librerías del proyecto, y para qué se usa cada u
 ## 📁 Estructura del repositorio
 
 <!-- markdownlint-disable MD040 -->
+
 ```
 gescoach/
 ├── client/   # Aplicación React
 ├── server/   # API REST con Express
 └── docs/     # Modelo de datos y roles y permisos
 ```
+
 <!-- markdownlint-enable MD040 -->
 
 ## 🚀 Puesta en marcha
@@ -150,11 +152,11 @@ cd ../client && pnpm install --frozen-lockfile
 
 Crea `server/.env` a partir de `server/.env.example`:
 
-| Variable | Descripción |
-| --- | --- |
-| `PORT` | Puerto de la API (por defecto, 3000) |
+| Variable      | Descripción                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `PORT`        | Puerto de la API (por defecto, 3000)                                                                                |
 | `MONGODB_URI` | Cadena de conexión de MongoDB, **incluyendo el nombre de la base de datos** (por ejemplo `/gescoach` antes del `?`) |
-| `JWT_SECRET` | Secreto largo y aleatorio para firmar los tokens |
+| `JWT_SECRET`  | Secreto largo y aleatorio para firmar los tokens                                                                    |
 
 Para generar un secreto:
 
@@ -195,47 +197,53 @@ Vite redirige las peticiones de `/api` al servidor, así que el cliente usa ruta
 
 ## 🔌 API
 
-| Método | Ruta | Descripción |
-| --- | --- | --- |
-| GET | `/api/health` | Estado de la API y de la base de datos |
-| POST | `/api/auth/register` | Crea una cuenta |
-| POST | `/api/auth/login` | Inicia sesión (cookie `httpOnly`) |
-| POST | `/api/auth/logout` | Cierra sesión |
-| GET | `/api/auth/me` | Usuario de la sesión actual |
-| POST | `/api/teams` | Crea equipo, primera temporada y membresía de entrenador principal |
-| GET | `/api/teams/mine` | Equipos del usuario, con su rol y su temporada actual |
-| GET | `/api/teams/:teamId/players` | Plantilla de la temporada actual |
-| POST | `/api/teams/:teamId/players` | Añade un jugador a la plantilla |
-| PUT | `/api/teams/:teamId/players/:playerId` | Actualiza los datos de un jugador (los campos opcionales que no se envían se borran) |
-| PATCH | `/api/teams/:teamId/players/:playerId/status` | Cambia solo el estado de un jugador |
-| DELETE | `/api/teams/:teamId/players/:playerId` | Quita un jugador de la plantilla de la temporada actual |
-| GET | `/api/teams/:teamId/players/:playerId/notes` | Notas del entrenador sobre un jugador (solo entrenador principal) |
-| POST | `/api/teams/:teamId/players/:playerId/notes` | Añade una nota |
-| PUT | `/api/teams/:teamId/players/:playerId/notes/:noteId` | Edita una nota |
-| DELETE | `/api/teams/:teamId/players/:playerId/notes/:noteId` | Borra una nota |
-| GET | `/api/teams/:teamId/trainings` | Entrenos de la temporada actual |
-| POST | `/api/teams/:teamId/trainings` | Crea un entreno |
-| GET | `/api/teams/:teamId/trainings/:trainingId` | Un entreno con la lista de jugadores y su asistencia |
-| PUT | `/api/teams/:teamId/trainings/:trainingId` | Edita un entreno |
-| PATCH | `/api/teams/:teamId/trainings/:trainingId/status` | Suspende un entreno o lo vuelve a programar |
-| PUT | `/api/teams/:teamId/trainings/:trainingId/attendance` | Guarda la lista de asistencia |
-| DELETE | `/api/teams/:teamId/trainings/:trainingId` | Borra un entreno y su asistencia |
-| GET | `/api/teams/:teamId/matches` | Partidos de la temporada actual |
-| GET | `/api/teams/:teamId/matches/opponents` | Rivales ya usados, para sugerirlos en el formulario |
-| POST | `/api/teams/:teamId/matches` | Programa un partido |
-| GET | `/api/teams/:teamId/matches/:matchId` | Un partido |
-| PUT | `/api/teams/:teamId/matches/:matchId` | Edita los datos de un partido |
-| PATCH | `/api/teams/:teamId/matches/:matchId/status` | Cambia el estado (pendiente, jugando o finalizado) |
-| PATCH | `/api/teams/:teamId/matches/:matchId/score` | Cambia el resultado (solo mientras se juega) |
-| PUT | `/api/teams/:teamId/matches/:matchId/callup` | Guarda la convocatoria (solo con el partido pendiente) |
-| DELETE | `/api/teams/:teamId/matches/:matchId` | Borra un partido |
-| PATCH | `/api/teams/:teamId/season` | Cambia los datos de la temporada (la categoría y la modalidad se bloquean si ya hay jugadores o partidos) |
-| PATCH | `/api/teams/:teamId/season/settings` | Cambia las amarillas que suponen una sanción |
-| PATCH | `/api/teams/:teamId/club` | Cambia el nombre, los colores, el país, la localidad y el campo del equipo |
-| GET | `/api/teams/:teamId/club/members` | Miembros del equipo con su rol |
-| PATCH | `/api/account/profile` | Cambia el nombre, los apellidos y la fecha de nacimiento |
-| PATCH | `/api/account/email` | Cambia el correo (pide la contraseña actual) |
-| PUT | `/api/account/password` | Cambia la contraseña (pide la actual) |
+| Método | Ruta                                                  | Descripción                                                                                               |
+| ------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/health`                                         | Estado de la API y de la base de datos                                                                    |
+| POST   | `/api/auth/register`                                  | Crea una cuenta                                                                                           |
+| POST   | `/api/auth/login`                                     | Inicia sesión (cookie `httpOnly`)                                                                         |
+| POST   | `/api/auth/logout`                                    | Cierra sesión                                                                                             |
+| GET    | `/api/auth/me`                                        | Usuario de la sesión actual                                                                               |
+| POST   | `/api/teams`                                          | Crea equipo, primera temporada y membresía de entrenador principal                                        |
+| GET    | `/api/teams/mine`                                     | Equipos del usuario, con su rol y su temporada actual                                                     |
+| GET    | `/api/teams/:teamId/players`                          | Plantilla de la temporada actual                                                                          |
+| POST   | `/api/teams/:teamId/players`                          | Añade un jugador a la plantilla                                                                           |
+| PUT    | `/api/teams/:teamId/players/:playerId`                | Actualiza los datos de un jugador (los campos opcionales que no se envían se borran)                      |
+| PATCH  | `/api/teams/:teamId/players/:playerId/status`         | Cambia solo el estado de un jugador                                                                       |
+| DELETE | `/api/teams/:teamId/players/:playerId`                | Quita un jugador de la plantilla de la temporada actual                                                   |
+| GET    | `/api/teams/:teamId/players/:playerId/notes`          | Notas del entrenador sobre un jugador (solo entrenador principal)                                         |
+| POST   | `/api/teams/:teamId/players/:playerId/notes`          | Añade una nota                                                                                            |
+| PUT    | `/api/teams/:teamId/players/:playerId/notes/:noteId`  | Edita una nota                                                                                            |
+| DELETE | `/api/teams/:teamId/players/:playerId/notes/:noteId`  | Borra una nota                                                                                            |
+| GET    | `/api/teams/:teamId/trainings`                        | Entrenos de la temporada actual                                                                           |
+| POST   | `/api/teams/:teamId/trainings`                        | Crea un entreno                                                                                           |
+| GET    | `/api/teams/:teamId/trainings/:trainingId`            | Un entreno con la lista de jugadores y su asistencia                                                      |
+| PUT    | `/api/teams/:teamId/trainings/:trainingId`            | Edita un entreno                                                                                          |
+| PATCH  | `/api/teams/:teamId/trainings/:trainingId/status`     | Suspende un entreno o lo vuelve a programar                                                               |
+| PUT    | `/api/teams/:teamId/trainings/:trainingId/attendance` | Guarda la lista de asistencia                                                                             |
+| DELETE | `/api/teams/:teamId/trainings/:trainingId`            | Borra un entreno y su asistencia                                                                          |
+| GET    | `/api/teams/:teamId/matches`                          | Partidos de la temporada actual                                                                           |
+| GET    | `/api/teams/:teamId/matches/opponents`                | Rivales ya usados, para sugerirlos en el formulario                                                       |
+| POST   | `/api/teams/:teamId/matches`                          | Programa un partido                                                                                       |
+| GET    | `/api/teams/:teamId/matches/:matchId`                 | Un partido                                                                                                |
+| PUT    | `/api/teams/:teamId/matches/:matchId`                 | Edita los datos de un partido                                                                             |
+| PATCH  | `/api/teams/:teamId/matches/:matchId/status`          | Cambia el estado (pendiente, jugando o finalizado)                                                        |
+| PATCH  | `/api/teams/:teamId/matches/:matchId/score`           | Cambia el resultado (solo mientras se juega)                                                              |
+| PUT    | `/api/teams/:teamId/matches/:matchId/callup`          | Guarda la convocatoria (solo con el partido pendiente)                                                    |
+| PUT    | `/api/teams/:teamId/matches/:matchId/lineup`          | Guarda la alineación y los dorsales del partido                                                           |
+| POST   | `/api/teams/:teamId/matches/:matchId/events`          | Registra un evento mientras el partido está jugando                                                       |
+| DELETE | `/api/teams/:teamId/matches/:matchId/events/:eventId` | Elimina un evento y ajusta el marcador si era un gol                                                      |
+| DELETE | `/api/teams/:teamId/matches/:matchId`                 | Borra un partido                                                                                          |
+| GET    | `/api/teams/:teamId/calendar-notes`                   | Lista las notas y eventos del calendario                                                                  |
+| POST   | `/api/teams/:teamId/calendar-notes`                   | Crea una nota o evento del calendario                                                                     |
+| DELETE | `/api/teams/:teamId/calendar-notes/:noteId`           | Elimina una nota o evento del calendario                                                                  |
+| PATCH  | `/api/teams/:teamId/season`                           | Cambia los datos de la temporada (la categoría y la modalidad se bloquean si ya hay jugadores o partidos) |
+| PATCH  | `/api/teams/:teamId/season/settings`                  | Cambia las amarillas que suponen una sanción                                                              |
+| PATCH  | `/api/teams/:teamId/club`                             | Cambia el nombre, los colores, el país, la localidad y el campo del equipo                                |
+| GET    | `/api/teams/:teamId/club/members`                     | Miembros del equipo con su rol                                                                            |
+| PATCH  | `/api/account/profile`                                | Cambia el nombre, los apellidos y la fecha de nacimiento                                                  |
+| PATCH  | `/api/account/email`                                  | Cambia el correo (pide la contraseña actual)                                                              |
+| PUT    | `/api/account/password`                               | Cambia la contraseña (pide la actual)                                                                     |
 
 ## 🧠 Decisiones de diseño
 

@@ -228,6 +228,21 @@ Reglas:
 - **Los entrenos suspendidos no cuentan** y en ellos no se puede pasar lista.
 - Si un jugador está marcado como lesionado en la plantilla, la lista sugiere la ausencia justificada, pero nunca la aplica sola.
 
+### CalendarNote
+
+Una nota o evento personalizado del calendario, asociado a la temporada actual.
+
+| Campo | Tipo | Notas |
+| --- | --- | --- |
+| team | referencia a Team | Obligatorio |
+| season | referencia a Season | Obligatorio |
+| date | fecha | Obligatoria, guardada a medianoche UTC |
+| startTime | texto | Opcional, formato HH:MM |
+| title | texto | Obligatorio, máximo 120 caracteres |
+| details | texto | Opcional, máximo 1.000 caracteres |
+
+Solo se puede crear o eliminar desde los roles que gestionan entrenos. No sustituye a un partido o entreno: permite anotar reuniones, citas y otros compromisos del equipo.
+
 ### Opponent
 
 Un equipo rival. Es una entidad propia de cada equipo, reutilizable en todos los partidos contra él.
@@ -259,7 +274,9 @@ Un partido de la temporada.
 | `status` | lista cerrada | `pending`, `playing` o `finished` |
 | `goalsFor` | número 0-99 | Goles a favor. Solo existe desde que empieza el partido |
 | `goalsAgainst` | número 0-99 | Goles en contra. Igual |
-| `callup` | lista | Convocados. Cada uno es un subdocumento con su `player`, para poder añadirle después el dorsal de ese partido |
+| `callup` | lista | Convocados. Cada uno guarda jugador, titularidad y, opcionalmente, el dorsal de ese partido |
+| `lineup` | objeto | Alineación calculada a partir de la convocatoria: titulares, portero, dorsales y problemas de validación |
+| `events` | lista | Eventos del acta: goles, tarjetas y sustituciones, con minuto y jugadores implicados |
 
 El resultado se guarda **desde nuestra perspectiva**, sea cual sea la sede. De ahí se calcula si fue victoria, empate o derrota. Las pantallas lo muestran en el orden en que se anuncia el partido: en casa y en campo neutral va primero nuestro equipo, y fuera va primero el rival.
 
@@ -313,11 +330,12 @@ La abreviatura que se muestra en la plantilla (por ejemplo `ED` para extremo der
 | Puntos de liga | 3 por victoria y 1 por empate, solo en partidos de liga finalizados |
 | Tareas pendientes del dashboard | Desde el estado de los entrenos, los partidos y las convocatorias |
 | Riesgo de sanción | Jugadores con una amarilla menos que el límite de la temporada |
-| Estadísticas de jugadores y equipo *(previsto)* | Desde las actas de los partidos |
+| Minutos, goles, asistencias, tarjetas y partidos de los jugadores | Desde la convocatoria, alineación y eventos del acta; los minutos suman intervalos aunque haya reentradas |
+| Media de puntos de liga | Puntos de liga divididos entre partidos de liga finalizados |
 
-## Previsto
+## Funciones implementadas y previstas
 
-Estas entidades están diseñadas a grandes rasgos y **pueden cambiar** cuando se implementen. Se incluyen para que el modelo actual no cierre ninguna puerta.
+Las entidades que siguen incluyen funciones ya implementadas dentro de Match y otras todavía previstas. Las partes futuras están marcadas como tales y pueden cambiar cuando se construyan.
 
 ```mermaid
 erDiagram
@@ -359,6 +377,7 @@ Entidad propia para los campos, porque un mismo campo lo usan varios equipos y p
 
 ### Lineup y MatchReport
 
-- **Convocatoria:** ya implementada dentro del partido (ver Match). Falta el cambio puntual de dorsal de un partido, que se guardará en cada elemento de la convocatoria.
-- **Lineup (alineación):** formación elegida (depende de la modalidad), once inicial y suplentes. Los titulares salen de los convocados.
-- **MatchReport (acta):** goleadores, asistentes, tarjetas y cambios. De ella salen los minutos, goles, asistencias y tarjetas de cada jugador.
+- **Convocatoria:** implementada dentro del partido (ver Match). Incluye titularidad y permite un dorsal puntual sin modificar el dorsal fijo de la plantilla.
+- **Lineup (alineación):** titulares, suplentes, portero y dorsales del partido. El servidor valida el número de titulares según la modalidad, que haya un portero y que no se repitan dorsales.
+- **MatchReport (acta):** se guarda como la lista events dentro de Match. Incluye goles a favor y en contra, penalti, gol en propia, tarjetas y sustituciones. Los eventos solo se registran mientras el partido está jugando.
+- **Minutos:** se calculan con los intervalos de participación derivados de la alineación y los cambios. Si un jugador entra, sale y vuelve a entrar, cada intervalo se suma por separado.

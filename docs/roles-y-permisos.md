@@ -17,7 +17,7 @@ Este documento recoge qué roles existen en un equipo, qué puede hacer cada uno
 | Ajustes del club y de la temporada | Implementado |
 | Dashboard filtrado según el rol | Implementado |
 | Invitar a otros miembros | Previsto |
-| Permisos del resto de funciones (convocatoria, acta, estadísticas...) | Diseñado, a medida que se construya cada función |
+| Convocatoria, alineación, acta y estadísticas | Implementado |
 
 Hoy solo existe el rol `head_coach`, porque quien crea el equipo lo recibe automáticamente y todavía no hay invitaciones. El diseño ya está preparado para varios miembros.
 
@@ -48,17 +48,18 @@ Es el diseño acordado. Las filas marcadas como *implementado* ya se comprueban 
 | Ver plantilla, calendario y partidos | Sí | Sí | Sí | Sí | Sí |
 | Editar plantilla *(implementado)* | Sí | Sí | No | No | No |
 | Crear entrenos y pasar lista *(implementado)* | Sí | Sí | No | No | No |
-| **Editar convocatoria** *(implementado)* **y alineación** | **Sí** | No | No | No | No |
+| **Editar convocatoria y alineación** *(implementado)* | **Sí** | No | No | No | No |
 | Ver convocatoria *(implementado)* y alineación | Sí | Sí | Sí | No | No |
 | Programar, editar y borrar partidos *(implementado)* | Sí | Sí | No | No | No |
 | Cambiar el estado y el resultado de un partido *(implementado)* | Sí | Sí | Sí | No | No |
-| Registrar el acta | Sí | Sí | Sí | No | No |
-| Ver estadísticas | Sí | Sí | Sí | Sí | No |
+| Registrar el acta *(implementado)* | Sí | Sí | Sí | No | No |
+| Ver estadísticas *(implementado)* | Sí | Sí | Sí | Sí | No |
 | Cambiar el estado de un jugador *(implementado)* | Sí | Sí | No | No | Solo disponible ↔ lesionado |
 | Invitar y gestionar miembros | Sí | No | No | No | No |
 | Editar equipo y temporada *(implementado)* | Sí | No | No | No | No |
 | Ver los miembros del equipo *(implementado)* | Sí | Sí | Sí | Sí | Sí |
 | Notas del entrenador sobre los jugadores | Sí | No | No | No | No |
+| Crear y eliminar notas del calendario | Sí | Sí | No | No | No |
 
 Una consecuencia de este diseño: el delegado puede registrar el acta, pero no preparar la convocatoria que la precede. La convocatoria y la alineación solo las modifica el entrenador principal.
 
@@ -88,7 +89,9 @@ Notas:
 - **Entrenos y asistencia.** Crear, editar, suspender y borrar entrenos y pasar lista lo hacen el entrenador principal y el segundo entrenador. La lista de jugadores de un entreno y el recuento de asistencia solo se envían a quienes pueden ver estadísticas, así que el médico no los recibe. El delegado y el responsable los ven en solo lectura.
 - **Notas.** Solo el entrenador principal. Cualquier otro rol recibe `403`.
 - **Partidos.** Programar, editar y borrar partidos lo hacen el entrenador principal y el segundo entrenador. Cambiar el estado y el resultado también lo puede hacer el delegado, que es quien acompaña al equipo en los partidos. Todos los roles ven los partidos.
-- **Convocatoria.** Solo la edita el entrenador principal, y solo con el partido pendiente. Solo se envía a quienes pueden verla (entrenador principal, segundo entrenador y delegado). Los jugadores que se añaden deben estar disponibles; un convocado que después se lesiona se mantiene, y el cliente lo avisa.
+- **Convocatoria y alineación.** Solo las edita el entrenador principal, y solo con el partido pendiente. La convocatoria se puede exportar al portapapeles desde el cliente. Solo se envían a quienes pueden verlas (entrenador principal, segundo entrenador y delegado). Los jugadores que se añaden deben estar disponibles; un convocado que después se lesiona se mantiene, y el cliente lo avisa.
+- **Acta y estadísticas.** El entrenador principal, segundo entrenador y delegado pueden registrar y eliminar eventos mientras el partido está en juego. Las estadísticas derivadas se muestran a los roles que pueden ver estadísticas; los minutos suman correctamente las reentradas.
+- **Notas del calendario.** El entrenador principal y el segundo entrenador pueden crear y eliminar notas o eventos personalizados. Todos los miembros pueden consultar el calendario.
 - **Ajustes del club y de la temporada.** Solo el entrenador principal puede cambiar el nombre, los colores, el país, la localidad, el campo, la temporada, la duración del partido, la competición y las amarillas que suponen una sanción. El resto de roles ve los ajustes sin poder cambiarlos. La categoría y la modalidad, además, se bloquean si la temporada ya tiene jugadores o partidos: el servidor responde `409`.
 - **Miembros.** Todos los miembros ven los nombres y los roles del equipo. El correo solo lo ve el entrenador principal. Invitar a otros miembros está previsto.
 - **Dashboard.** Cada rol ve solo lo que le corresponde. Las tareas pendientes se limitan a lo que el rol puede resolver (por ejemplo, la convocatoria solo la ve el entrenador principal). El bloque de riesgo de sanción no se envía al médico, porque las amarillas son una estadística, y solo el entrenador principal ve la ruedecita para ajustar el límite.
@@ -109,6 +112,7 @@ Los permisos están en un **único archivo del servidor** (`server/src/lib/permi
 - `canRecordMatch(role)`: quién cambia el estado y el resultado de un partido.
 - `canEditCallup(role)`: quién edita la convocatoria.
 - `canSeeCallup(role)`: quién ve la convocatoria.
+- `canEditLineup(role)`: quién edita la alineación, actualmente solo el entrenador principal.
 - `canEditTeam(role)`: quién cambia los ajustes del club y de la temporada (solo el entrenador principal).
 
 Cambiar un permiso es editar ese archivo. Los permisos no se guardan en la base de datos: solo se guarda el rol.
