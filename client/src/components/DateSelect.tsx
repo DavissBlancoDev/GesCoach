@@ -78,29 +78,43 @@ function DateSelect({
   function update(next: Parts) {
     // Si el día no existe en el mes elegido (31 de febrero), lo ajustamos
     const limit = daysInMonth(next.year, next.month);
-    const fixed = next.day && Number(next.day) > limit ? { ...next, day: String(limit) } : next;
+    const fixed =
+      next.day && Number(next.day) > limit
+        ? { ...next, day: String(limit) }
+        : next;
 
     setParts(fixed);
     onChange(
       fixed.year && fixed.month && fixed.day
         ? `${fixed.year}-${pad(Number(fixed.month))}-${pad(Number(fixed.day))}`
-        : ""
+        : "",
     );
   }
 
-  const days = Array.from({ length: daysInMonth(parts.year, parts.month) }, (_, i) => i + 1);
+  const days = Array.from(
+    { length: daysInMonth(parts.year, parts.month) },
+    (_, i) => i + 1,
+  );
 
   // Si la fecha que se está editando cae fuera del rango, se añade su año
   // para que no aparezca el desplegable en blanco
-  const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i);
-  if (parts.year && !years.includes(Number(parts.year))) years.push(Number(parts.year));
+  const years = Array.from(
+    { length: maxYear - minYear + 1 },
+    (_, i) => minYear + i,
+  );
+  if (parts.year && !years.includes(Number(parts.year)))
+    years.push(Number(parts.year));
   years.sort((a, b) => (order === "desc" ? b - a : a - b));
 
-  const selectClass = "rounded border border-gray-300 bg-white px-2 py-2";
+  const selectClass =
+    "rounded-xl border border-slate-200 bg-slate-50 px-2 py-3 text-slate-700 outline-none transition focus:border-green-600 focus:bg-white focus:ring-4 focus:ring-green-600/10";
 
   return (
     <div role="group" aria-labelledby={`${id}-label`}>
-      <span id={`${id}-label`} className="block text-sm font-medium text-gray-700">
+      <span
+        id={`${id}-label`}
+        className="block text-sm font-semibold text-slate-700"
+      >
         {label}
       </span>
       <div className="mt-1 flex gap-2">

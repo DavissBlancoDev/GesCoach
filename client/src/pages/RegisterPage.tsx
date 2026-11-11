@@ -6,9 +6,9 @@ import { getFieldErrors } from "../api/client";
 import { useSession } from "../hooks/useSession";
 import FormField from "../components/FormField";
 import DateSelect from "../components/DateSelect";
+import AuthLayout from "../components/AuthLayout";
 
 const currentYear = new Date().getFullYear();
-
 function RegisterPage() {
   const [form, setForm] = useState<RegisterData>({
     email: "",
@@ -21,7 +21,6 @@ function RegisterPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: user } = useSession();
-
   const mutation = useMutation({
     mutationFn: async (data: RegisterData) => {
       await register(data);
@@ -32,24 +31,33 @@ function RegisterPage() {
       navigate("/inicio", { replace: true });
     },
   });
-
   if (user) return <Navigate to="/" replace />;
-
   const fieldErrors = getFieldErrors(mutation.error);
   const firstError = (field: string) => fieldErrors[field]?.[0];
-
   function update(field: keyof RegisterData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
-
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     mutation.mutate(form);
   }
-
   return (
-    <main className="mx-auto max-w-sm p-6">
-      <h1 className="mb-6 text-2xl font-bold">Crear cuenta</h1>
+    <AuthLayout
+      eyebrow="Empieza hoy"
+      title="Crea tu cuenta"
+      description="Configura tu perfil y prepara GesCoach para trabajar con tu equipo desde el primer día."
+      footer={
+        <p className="text-sm text-slate-500">
+          ¿Ya tienes cuenta?{" "}
+          <Link
+            to="/login"
+            className="font-semibold text-green-700 transition hover:text-green-800"
+          >
+            Inicia sesión
+          </Link>
+        </p>
+      }
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField
           id="name"
@@ -100,24 +108,19 @@ function RegisterPage() {
           required
         />
         {mutation.isError && (
-          <p className="text-sm text-red-600">{mutation.error.message}</p>
+          <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+            {mutation.error.message}
+          </p>
         )}
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="w-full rounded bg-green-700 px-4 py-2 text-white disabled:opacity-50"
+          className="w-full rounded-xl bg-green-700 px-4 py-3 font-semibold text-white shadow-lg shadow-green-700/20 transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {mutation.isPending ? "Creando cuenta..." : "Crear cuenta"}
         </button>
       </form>
-      <p className="mt-4 text-sm">
-        ¿Ya tienes cuenta?{" "}
-        <Link to="/login" className="text-green-700 underline">
-          Inicia sesión
-        </Link>
-      </p>
-    </main>
+    </AuthLayout>
   );
 }
-
 export default RegisterPage;
