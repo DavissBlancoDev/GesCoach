@@ -3,16 +3,47 @@ import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateSeasonSettings } from "../api/teams";
 import type { SquadPlayer } from "../api/players";
-import type { LeaguePoints, MatchRecord, PendingTask, SquadCounts } from "../lib/dashboard";
+import type {
+  LeaguePoints,
+  MatchRecord,
+  PendingTask,
+  SquadCounts,
+} from "../lib/dashboard";
 import StatusIcon from "./StatusIcon";
 
 /** Plantilla según el estado de los jugadores, y partidos jugados con su récord. */
-export function SquadBlock({ counts, record }: { counts: SquadCounts; record: MatchRecord }) {
+export function SquadBlock({
+  counts,
+  record,
+}: {
+  counts: SquadCounts;
+  record: MatchRecord;
+}) {
   const tiles = [
-    { label: "Disponibles", value: counts.available, status: "available" as const, alert: "" },
-    { label: "Lesionados", value: counts.injured, status: "injured" as const, alert: "text-orange-700" },
-    { label: "Sancionados", value: counts.suspended, status: "suspended" as const, alert: "text-red-700" },
-    { label: "Inactivos", value: counts.inactive, status: "inactive" as const, alert: "" },
+    {
+      label: "Disponibles",
+      value: counts.available,
+      status: "available" as const,
+      alert: "",
+    },
+    {
+      label: "Lesionados",
+      value: counts.injured,
+      status: "injured" as const,
+      alert: "text-orange-700",
+    },
+    {
+      label: "Sancionados",
+      value: counts.suspended,
+      status: "suspended" as const,
+      alert: "text-red-700",
+    },
+    {
+      label: "Inactivos",
+      value: counts.inactive,
+      status: "inactive" as const,
+      alert: "",
+    },
   ];
 
   return (
@@ -21,7 +52,9 @@ export function SquadBlock({ counts, record }: { counts: SquadCounts; record: Ma
       <div className="grid grid-cols-4 gap-2 text-center">
         {tiles.map((tile) => (
           <div key={tile.label} className="rounded bg-gray-50 p-2">
-            <p className={`text-2xl font-bold tabular-nums ${tile.value > 0 ? tile.alert : ""}`}>
+            <p
+              className={`text-2xl font-bold tabular-nums ${tile.value > 0 ? tile.alert : ""}`}
+            >
               {tile.value}
             </p>
             <p className="text-xs text-gray-600">
@@ -49,16 +82,29 @@ export function PointsBlock({ points }: { points: LeaguePoints }) {
     <section className="rounded border border-gray-200 p-4">
       <h2 className="mb-3 text-lg font-semibold">Puntos de liga</h2>
       {points.played === 0 ? (
-        <p className="text-sm text-gray-600">Aún no has jugado ningún partido de liga.</p>
+        <p className="text-sm text-gray-600">
+          Aún no has jugado ningún partido de liga.
+        </p>
       ) : (
         <>
           <p>
-            <span className="text-4xl font-bold tabular-nums">{points.points}</span>{" "}
-            <span className="text-lg text-gray-600">puntos de {points.maxPoints}</span>
+            <span className="text-4xl font-bold tabular-nums">
+              {points.points}
+            </span>{" "}
+            <span className="text-lg text-gray-600">
+              puntos de {points.maxPoints}
+            </span>
+          </p>
+          <p className="mt-1 text-base font-semibold text-gray-700">
+            {(points.points / points.played).toLocaleString("es-ES", {
+              maximumFractionDigits: 2,
+            })}{" "}
+            puntos por partido
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            {points.played} {points.played === 1 ? "partido de liga" : "partidos de liga"}. Cuentan
-            3 puntos por victoria y 1 por empate.
+            {points.played}{" "}
+            {points.played === 1 ? "partido de liga" : "partidos de liga"}.
+            Cuentan 3 puntos por victoria y 1 por empate.
           </p>
         </>
       )}
@@ -113,7 +159,8 @@ function YellowCardsDialog({ teamId, limit, onClose }: YellowCardsDialogProps) {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (yellowCardsLimit: number) => updateSeasonSettings(teamId, { yellowCardsLimit }),
+    mutationFn: (yellowCardsLimit: number) =>
+      updateSeasonSettings(teamId, { yellowCardsLimit }),
     onSuccess: async () => {
       // El ajuste viaja con la temporada, que sale de la lista de equipos
       await queryClient.invalidateQueries({ queryKey: ["teams", "mine"] });
@@ -153,11 +200,14 @@ function YellowCardsDialog({ teamId, limit, onClose }: YellowCardsDialogProps) {
           Amarillas para sanción
         </h3>
         <p className="text-sm text-gray-600">
-          Se avisa de los jugadores que están a una amarilla de la sanción. Depende del reglamento
-          de tu competición.
+          Se avisa de los jugadores que están a una amarilla de la sanción.
+          Depende del reglamento de tu competición.
         </p>
         <div>
-          <label htmlFor="yellowLimit" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="yellowLimit"
+            className="block text-sm font-medium text-gray-700"
+          >
             Amarillas que suponen una sanción
           </label>
           <input
@@ -172,7 +222,9 @@ function YellowCardsDialog({ teamId, limit, onClose }: YellowCardsDialogProps) {
             required
           />
         </div>
-        {mutation.isError && <p className="text-sm text-red-600">{mutation.error.message}</p>}
+        {mutation.isError && (
+          <p className="text-sm text-red-600">{mutation.error.message}</p>
+        )}
         <div className="flex justify-end gap-2">
           <button
             type="button"
@@ -208,7 +260,12 @@ interface SanctionBlockProps {
  * hay ninguno, un mensaje en verde. Con la ruedecita se ajusta cuántas
  * amarillas suponen una sanción.
  */
-export function SanctionBlock({ teamId, players, limit, canEdit }: SanctionBlockProps) {
+export function SanctionBlock({
+  teamId,
+  players,
+  limit,
+  canEdit,
+}: SanctionBlockProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
@@ -265,7 +322,11 @@ export function SanctionBlock({ teamId, players, limit, canEdit }: SanctionBlock
       </p>
 
       {dialogOpen && (
-        <YellowCardsDialog teamId={teamId} limit={limit} onClose={() => setDialogOpen(false)} />
+        <YellowCardsDialog
+          teamId={teamId}
+          limit={limit}
+          onClose={() => setDialogOpen(false)}
+        />
       )}
     </section>
   );
