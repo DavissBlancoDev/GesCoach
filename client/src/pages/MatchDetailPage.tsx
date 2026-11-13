@@ -45,19 +45,36 @@ interface ScoreboardProps {
  * quitar un gol a cada lado. Con el partido finalizado se colorea según el
  * resultado.
  */
-function Scoreboard({ match, teamName, editable, busy, onChange }: ScoreboardProps) {
+function Scoreboard({
+  match,
+  teamName,
+  editable,
+  busy,
+  onChange,
+}: ScoreboardProps) {
   const us = { key: "us" as const, name: teamName, goals: match.goalsFor };
-  const them = { key: "them" as const, name: match.opponent.name, goals: match.goalsAgainst };
+  const them = {
+    key: "them" as const,
+    name: match.opponent.name,
+    goals: match.goalsAgainst,
+  };
   const [left, right] = match.venue === "away" ? [them, us] : [us, them];
 
   const started = match.status !== "pending";
   const style = match.result ? RESULT_STYLES[match.result] : undefined;
 
   const renderSide = (side: typeof us | typeof them) => (
-    <div key={side.key} className="flex min-w-0 flex-1 flex-col items-center gap-1 text-center">
+    <div
+      key={side.key}
+      className="flex min-w-0 flex-1 flex-col items-center gap-1 text-center"
+    >
       <DefaultBadge className="h-12 w-12" />
       <span className="max-w-full truncate font-medium">{side.name}</span>
-      {started && <span className="text-4xl font-bold tabular-nums">{side.goals ?? 0}</span>}
+      {started && (
+        <span className="text-4xl font-bold tabular-nums">
+          {side.goals ?? 0}
+        </span>
+      )}
       {editable && (
         <div className="mt-1 flex gap-2">
           <button
@@ -84,16 +101,22 @@ function Scoreboard({ match, teamName, editable, busy, onChange }: ScoreboardPro
   );
 
   return (
-    <section className={`mt-6 rounded border p-4 ${style?.box ?? "border-gray-200"}`}>
+    <section
+      className={`mt-6 rounded border p-4 ${style?.box ?? "border-gray-200"}`}
+    >
       <div className="flex items-start justify-center gap-2 sm:gap-6">
         {renderSide(left)}
         {started && <span className="pt-20 text-2xl text-gray-400">-</span>}
         {renderSide(right)}
       </div>
       {!started && (
-        <p className="mt-3 text-center text-sm text-gray-600">El partido aún no ha empezado.</p>
+        <p className="mt-3 text-center text-sm text-gray-600">
+          El partido aún no ha empezado.
+        </p>
       )}
-      {style && <p className="mt-3 text-center text-sm font-semibold">{style.label}</p>}
+      {style && (
+        <p className="mt-3 text-center text-sm font-semibold">{style.label}</p>
+      )}
     </section>
   );
 }
@@ -112,11 +135,14 @@ function MatchDetailPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    "summary" | "events" | "callup" | "lineup"
+  >("summary");
 
   /** Sustituye un partido en la lista que está en caché, sin esperar a recargarla. */
   const patchMatchInCache = (changes: Partial<Match>) =>
     queryClient.setQueryData<Match[]>(["matches", teamId], (old) =>
-      old?.map((m) => (m.id === matchId ? { ...m, ...changes } : m))
+      old?.map((m) => (m.id === matchId ? { ...m, ...changes } : m)),
     );
 
   const statusMutation = useMutation({
@@ -133,9 +159,17 @@ function MatchDetailPage() {
 
   const scoreMutation = useMutation({
     mutationFn: (score: { goalsFor: number; goalsAgainst: number }) =>
-      updateMatchScore(teamId as string, matchId as string, score.goalsFor, score.goalsAgainst),
+      updateMatchScore(
+        teamId as string,
+        matchId as string,
+        score.goalsFor,
+        score.goalsAgainst,
+      ),
     onSuccess: (data) =>
-      patchMatchInCache({ goalsFor: data.goalsFor, goalsAgainst: data.goalsAgainst }),
+      patchMatchInCache({
+        goalsFor: data.goalsFor,
+        goalsAgainst: data.goalsAgainst,
+      }),
   });
 
   const deleteMutation = useMutation({
@@ -143,7 +177,7 @@ function MatchDetailPage() {
     onSuccess: () => {
       // Quitamos el partido de la caché antes de volver a la lista
       queryClient.setQueryData<Match[]>(["matches", teamId], (old) =>
-        old?.filter((m) => m.id !== matchId)
+        old?.filter((m) => m.id !== matchId),
       );
       navigate("/partidos", { replace: true });
       void queryClient.invalidateQueries({ queryKey: ["matches", teamId] });
@@ -151,7 +185,10 @@ function MatchDetailPage() {
   });
 
   if (!current || isPending) return <p className="p-6">Cargando...</p>;
-  if (isError) return <p className="p-6 text-red-600">No se ha podido cargar el partido.</p>;
+  if (isError)
+    return (
+      <p className="p-6 text-red-600">No se ha podido cargar el partido.</p>
+    );
 
   const match = matches?.find((m) => m.id === matchId);
   if (!match || !current.team || !current.currentSeason) {
@@ -175,13 +212,15 @@ function MatchDetailPage() {
   /** Suma o resta un gol a un lado, respetando el rango de 0 a 99. */
   function changeScore(side: "us" | "them", delta: number) {
     const goalsFor = (match?.goalsFor ?? 0) + (side === "us" ? delta : 0);
-    const goalsAgainst = (match?.goalsAgainst ?? 0) + (side === "them" ? delta : 0);
-    if (goalsFor < 0 || goalsAgainst < 0 || goalsFor > 99 || goalsAgainst > 99) return;
+    const goalsAgainst =
+      (match?.goalsAgainst ?? 0) + (side === "them" ? delta : 0);
+    if (goalsFor < 0 || goalsAgainst < 0 || goalsFor > 99 || goalsAgainst > 99)
+      return;
     scoreMutation.mutate({ goalsFor, goalsAgainst });
   }
 
   return (
-    <main className="mx-auto max-w-6xl p-4">
+    <main className="mx-auto max-w-7xl p-4 sm:px-6">
       <Link to="/partidos" className="text-sm text-gray-600 hover:underline">
         ← Partidos
       </Link>
@@ -194,9 +233,11 @@ function MatchDetailPage() {
               : `${team.name} - ${match.opponent.name}`}
           </h1>
           <p className="mt-1 text-gray-700">
-            {competitionLabel(match.competition, current.currentSeason.division)} ·{" "}
-            {formatMatchDate(match.date)} ·{" "}
-            {matchTimeLabel(match)}
+            {competitionLabel(
+              match.competition,
+              current.currentSeason.division,
+            )}{" "}
+            · {formatMatchDate(match.date)} · {matchTimeLabel(match)}
           </p>
           <p className="text-gray-600">
             <span role="img" aria-label={VENUE_LABELS[match.venue]}>
@@ -235,13 +276,19 @@ function MatchDetailPage() {
 
       {/* Confirmación antes de eliminar: la acción no se puede deshacer */}
       {confirmingDelete && !editing && (
-        <div role="alertdialog" className="mt-4 rounded border border-red-200 bg-red-50 p-4">
+        <div
+          role="alertdialog"
+          className="mt-4 rounded border border-red-200 bg-red-50 p-4"
+        >
           <p className="font-medium">¿Eliminar este partido?</p>
           <p className="mt-1 text-sm text-gray-700">
-            Se borrarán también su resultado y su convocatoria. No se puede deshacer.
+            Se borrarán también su resultado y su convocatoria. No se puede
+            deshacer.
           </p>
           {deleteMutation.isError && (
-            <p className="mt-2 text-sm text-red-600">{deleteMutation.error.message}</p>
+            <p className="mt-2 text-sm text-red-600">
+              {deleteMutation.error.message}
+            </p>
           )}
           <div className="mt-3 flex gap-2">
             <button
@@ -275,129 +322,185 @@ function MatchDetailPage() {
         </div>
       ) : (
         <>
-          <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-start">
+          <div className="mt-6 grid gap-6">
             <div className="space-y-6">
-              <Scoreboard
-            match={match}
-            teamName={team.name}
-            editable={canRecord && match.status === "playing"}
-            busy={scoreMutation.isPending}
-            onChange={changeScore}
-          />
-              {scoreMutation.isError && (
-                <p className="mt-2 text-sm text-red-600">{scoreMutation.error.message}</p>
+              <div className="mx-auto w-full max-w-4xl">
+                <Scoreboard
+                  match={match}
+                  teamName={team.name}
+                  editable={canRecord && match.status === "playing"}
+                  busy={scoreMutation.isPending}
+                  onChange={changeScore}
+                />
+                {scoreMutation.isError && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {scoreMutation.error.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="border-b border-gray-200">
+                <nav
+                  className="flex flex-wrap gap-1"
+                  aria-label="Secciones del partido"
+                >
+                  {(
+                    [
+                      ["summary", "Resumen"],
+                      ["events", "Eventos"],
+                      ["callup", "Convocatoria"],
+                      ["lineup", "Alineación"],
+                    ] as const
+                  ).map(([tab, label]) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setActiveTab(tab)}
+                      className={`border-b-2 px-4 py-3 text-sm font-medium ${activeTab === tab ? "border-green-700 text-green-700" : "border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
+              {activeTab === "summary" && (
+                <>
+                  {/* Cambio de estado: pendiente -> jugando -> finalizado */}
+                  {canRecord && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        {match.status === "playing" && (
+                          <>
+                            <button
+                              type="button"
+                              disabled={statusMutation.isPending}
+                              onClick={() => statusMutation.mutate("finished")}
+                              className="rounded bg-green-700 px-4 py-2 text-white disabled:opacity-50"
+                            >
+                              Finalizar partido
+                            </button>
+                            <button
+                              type="button"
+                              disabled={statusMutation.isPending || hasGoals}
+                              title={
+                                hasGoals
+                                  ? "Ya hay goles: finaliza el partido"
+                                  : undefined
+                              }
+                              onClick={() => statusMutation.mutate("pending")}
+                              className="rounded border border-gray-300 px-4 py-2 disabled:opacity-50"
+                            >
+                              Volver a pendiente
+                            </button>
+                          </>
+                        )}
+                        {match.status === "finished" && (
+                          <button
+                            type="button"
+                            disabled={statusMutation.isPending}
+                            onClick={() => statusMutation.mutate("playing")}
+                            className="rounded border border-gray-300 px-4 py-2 disabled:opacity-50"
+                          >
+                            Reabrir partido
+                          </button>
+                        )}
+                      </div>
+                      {match.status === "finished" && (
+                        <p className="text-xs text-gray-500">
+                          Para corregir el resultado, reabre el partido,
+                          cámbialo y vuelve a finalizarlo.
+                        </p>
+                      )}
+                      {statusMutation.isError && match.status !== "pending" && (
+                        <div className="text-sm text-red-600">
+                          <p>{statusMutation.error.message}</p>
+                          {/* Al intentar empezar sin alineación completa, se enseña lo que falta */}
+                          <ul className="mt-1 list-inside list-disc">
+                            {getFieldErrors(statusMutation.error).lineup?.map(
+                              (problem) => (
+                                <li key={problem}>{problem}</li>
+                              ),
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
 
-          {/* Cambio de estado: pendiente -> jugando -> finalizado */}
-          {canRecord && (
-            <div className="mt-4 space-y-2">
-              <div className="flex flex-wrap gap-2">
-                {match.status === "playing" && (
-                  <>
+              {activeTab === "summary" && match.observations && (
+                <section className="mt-6 rounded border border-gray-200 p-4">
+                  <h2 className="mb-1 text-lg font-semibold">Observaciones</h2>
+                  <p className="whitespace-pre-wrap text-sm">
+                    {match.observations}
+                  </p>
+                </section>
+              )}
+
+              {activeTab === "events" &&
+                (match.events ||
+                  match.status === "playing" ||
+                  match.status === "finished") && (
+                  <MatchEventsPanel
+                    teamId={team._id}
+                    match={match}
+                    canEdit={canRecord}
+                  />
+                )}
+            </div>
+
+            <div className="space-y-6">
+              {/* La convocatoria solo llega a los roles que pueden verla */}
+              {activeTab === "callup" && match.callup && (
+                <div className="mt-6">
+                  <CallupPanel
+                    teamId={team._id}
+                    match={match}
+                    canEdit={canEditCallup(role)}
+                  />
+                </div>
+              )}
+
+              {/* La alineación se hace con los convocados. La key reinicia el panel cuando cambia la convocatoria */}
+              {activeTab === "lineup" && match.lineup && match.callup && (
+                <div className="mt-6">
+                  <LineupPanel
+                    key={match.callup.join(",")}
+                    teamId={team._id}
+                    match={match}
+                    canEdit={canEditCallup(role)}
+                  />
+                </div>
+              )}
+
+              {activeTab === "summary" &&
+                match.status === "pending" &&
+                canRecord && (
+                  <div className="mt-6 space-y-2">
                     <button
                       type="button"
                       disabled={statusMutation.isPending}
-                      onClick={() => statusMutation.mutate("finished")}
+                      onClick={() => statusMutation.mutate("playing")}
                       className="rounded bg-green-700 px-4 py-2 text-white disabled:opacity-50"
                     >
-                      Finalizar partido
+                      Empezar partido
                     </button>
-                    <button
-                      type="button"
-                      disabled={statusMutation.isPending || hasGoals}
-                      title={hasGoals ? "Ya hay goles: finaliza el partido" : undefined}
-                      onClick={() => statusMutation.mutate("pending")}
-                      className="rounded border border-gray-300 px-4 py-2 disabled:opacity-50"
-                    >
-                      Volver a pendiente
-                    </button>
-                  </>
+                    {statusMutation.isError && (
+                      <div className="text-sm text-red-600">
+                        <p>{statusMutation.error.message}</p>
+                        <ul className="mt-1 list-inside list-disc">
+                          {getFieldErrors(statusMutation.error).lineup?.map(
+                            (problem) => (
+                              <li key={problem}>{problem}</li>
+                            ),
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 )}
-                {match.status === "finished" && (
-                  <button
-                    type="button"
-                    disabled={statusMutation.isPending}
-                    onClick={() => statusMutation.mutate("playing")}
-                    className="rounded border border-gray-300 px-4 py-2 disabled:opacity-50"
-                  >
-                    Reabrir partido
-                  </button>
-                )}
-              </div>
-              {match.status === "finished" && (
-                <p className="text-xs text-gray-500">
-                  Para corregir el resultado, reabre el partido, cámbialo y vuelve a finalizarlo.
-                </p>
-              )}
-              {statusMutation.isError && match.status !== "pending" && (
-                <div className="text-sm text-red-600">
-                  <p>{statusMutation.error.message}</p>
-                  {/* Al intentar empezar sin alineación completa, se enseña lo que falta */}
-                  <ul className="mt-1 list-inside list-disc">
-                    {getFieldErrors(statusMutation.error).lineup?.map((problem) => (
-                      <li key={problem}>{problem}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-
-          {match.observations && (
-            <section className="mt-6 rounded border border-gray-200 p-4">
-              <h2 className="mb-1 text-lg font-semibold">Observaciones</h2>
-              <p className="whitespace-pre-wrap text-sm">{match.observations}</p>
-            </section>
-          )}
-
-          {(match.events || match.status === "playing" || match.status === "finished") && (
-            <MatchEventsPanel teamId={team._id} match={match} canEdit={canRecord} />
-          )}
-            </div>
-
-            <div className="space-y-6">
-
-          {/* La convocatoria solo llega a los roles que pueden verla */}
-          {match.callup && (
-            <div className="mt-6">
-              <CallupPanel teamId={team._id} match={match} canEdit={canEditCallup(role)} />
-            </div>
-          )}
-
-          {/* La alineación se hace con los convocados. La key reinicia el panel cuando cambia la convocatoria */}
-          {match.lineup && match.callup && (
-            <div className="mt-6">
-              <LineupPanel
-                key={match.callup.join(",")}
-                teamId={team._id}
-                match={match}
-                canEdit={canEditCallup(role)}
-              />
-            </div>
-          )}
-
-          {match.status === "pending" && canRecord && (
-            <div className="mt-6 space-y-2">
-              <button
-                type="button"
-                disabled={statusMutation.isPending}
-                onClick={() => statusMutation.mutate("playing")}
-                className="rounded bg-green-700 px-4 py-2 text-white disabled:opacity-50"
-              >
-                Empezar partido
-              </button>
-              {statusMutation.isError && (
-                <div className="text-sm text-red-600">
-                  <p>{statusMutation.error.message}</p>
-                  <ul className="mt-1 list-inside list-disc">
-                    {getFieldErrors(statusMutation.error).lineup?.map((problem) => (
-                      <li key={problem}>{problem}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
             </div>
           </div>
         </>

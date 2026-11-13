@@ -11,6 +11,7 @@ import {
   MATCH_STATUSES,
   MATCH_EVENT_TYPES,
   MATCH_EVENT_SIDES,
+  FORMATION_OPTIONS,
   type MatchStatus,
 } from "../models/Match";
 import { Opponent } from "../models/Opponent";
@@ -93,10 +94,12 @@ const lineupSchema = z
           player: objectId,
           starter: z.boolean(),
           jerseyNumber: z.number().int().min(0).max(99).optional(),
+          slot: z.string().trim().max(40).optional(),
         })
       )
       .max(40),
     goalkeeper: objectId.nullable().optional(),
+    formation: z.enum(FORMATION_OPTIONS).optional(),
   })
   .refine((b) => new Set(b.players.map((p) => p.player)).size === b.players.length, {
     message: "Hay jugadores repetidos",
@@ -222,8 +225,10 @@ function toMatchItem(
             player: c.player.toString(),
             starter: c.starter,
             jerseyNumber: c.jerseyNumber,
+            slot: c.slot,
           })),
           goalkeeper: match.goalkeeper?.toString(),
+          formation: match.formation,
           // Lo que falta para poder empezar el partido (vacío = completa)
           problems: lineupProblems(match, squad, required),
         }
@@ -584,7 +589,7 @@ router.put<MatchParams>("/:matchId/callup", async (req, res) => {
   match.callup = ids.map((id) => {
     const prev = previous.get(id);
     return prev
-      ? { player: prev.player, jerseyNumber: prev.jerseyNumber, starter: prev.starter }
+      ? { player: prev.player, jerseyNumber: prev.jerseyNumber, starter: prev.starter, slot: prev.slot }
       : { player: new mongoose.Types.ObjectId(id), starter: false };
   });
   if (match.goalkeeper && !ids.includes(match.goalkeeper.toString())) {
@@ -657,6 +662,7 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
     player: new mongoose.Types.ObjectId(p.player),
     starter: p.starter,
     jerseyNumber: p.jerseyNumber,
+    slot: p.slot,
   }));
 
   const squad = await loadSquad(season._id);
@@ -669,6 +675,7 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
 
   match.callup = entries;
   match.goalkeeper = goalkeeper ? new mongoose.Types.ObjectId(goalkeeper) : undefined;
+  match.formation = parsed.data.formation;
   await match.save();
 
   const opponent = await Opponent.findById(match.opponent);

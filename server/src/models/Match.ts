@@ -6,6 +6,8 @@ export const MATCH_COMPETITIONS = ["league", "cup", "tournament", "friendly"] as
 export const MATCH_VENUES = ["home", "away", "neutral"] as const;
 // pending: pendiente · playing: jugando · finished: finalizado
 export const MATCH_STATUSES = ["pending", "playing", "finished"] as const;
+export const FORMATION_OPTIONS = ["4-4-2", "4-3-3", "4-2-3-1", "4-1-4-1", "3-4-3", "3-5-2", "5-2-3", "5-3-2", "5-4-1"] as const;
+export type Formation = (typeof FORMATION_OPTIONS)[number];
 
 export type MatchCompetition = (typeof MATCH_COMPETITIONS)[number];
 export type MatchStatus = (typeof MATCH_STATUSES)[number];
@@ -20,6 +22,7 @@ interface ICallupEntry {
   player: Types.ObjectId;
   jerseyNumber?: number;
   starter: boolean;
+  slot?: string;
 }
 
 interface IMatchEvent {
@@ -52,6 +55,7 @@ interface IMatch {
   goalsFor?: number;
   goalsAgainst?: number;
   goalkeeper?: Types.ObjectId;
+  formation?: Formation;
   callup: ICallupEntry[];
   events: IMatchEvent[];
 }
@@ -67,6 +71,7 @@ const callupSchema = new Schema<ICallupEntry>(
     player: { type: Schema.Types.ObjectId, ref: "Player", required: true },
     jerseyNumber: { type: Number, min: 0, max: 99 },
     starter: { type: Boolean, default: false },
+    slot: { type: String, trim: true, maxlength: 40 },
   },
   { _id: false }
 );
@@ -114,6 +119,7 @@ const matchSchema = new Schema<IMatch>(
     goalsFor: { type: Number, min: 0, max: 99 },
     goalsAgainst: { type: Number, min: 0, max: 99 },
     goalkeeper: { type: Schema.Types.ObjectId, ref: "Player" },
+    formation: { type: String, enum: FORMATION_OPTIONS },
     callup: { type: [callupSchema], default: [] },
     events: { type: [eventSchema], default: [] },
   },

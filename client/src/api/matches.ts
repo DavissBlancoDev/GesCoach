@@ -5,8 +5,24 @@ export type MatchCompetition = "league" | "cup" | "tournament" | "friendly";
 export type MatchVenue = "home" | "away" | "neutral";
 export type MatchStatus = "pending" | "playing" | "finished";
 export type MatchResult = "win" | "draw" | "loss";
-export type MatchEventType = "goal" | "yellow_card" | "red_card" | "substitution";
+export type MatchEventType =
+  | "goal"
+  | "yellow_card"
+  | "red_card"
+  | "substitution";
 export type MatchEventSide = "for" | "against";
+export const FORMATION_OPTIONS = [
+  "4-4-2",
+  "4-3-3",
+  "4-2-3-1",
+  "4-1-4-1",
+  "3-4-3",
+  "3-5-2",
+  "5-2-3",
+  "5-3-2",
+  "5-4-1",
+] as const;
+export type Formation = (typeof FORMATION_OPTIONS)[number];
 
 export interface MatchEvent {
   id: string;
@@ -32,6 +48,7 @@ export interface LineupPlayer {
   player: string; // identificador del jugador
   starter: boolean;
   jerseyNumber?: number; // dorsal de ESTE partido, si es distinto del fijo
+  slot?: string; // posición ocupada en el sistema, por ejemplo "mid-2"
 }
 
 // Alineación de un partido. Solo llega a los roles que ven la convocatoria.
@@ -39,6 +56,7 @@ export interface Lineup {
   startersRequired: number; // titulares que marca la modalidad (7, 8 u 11)
   players: LineupPlayer[];
   goalkeeper?: string; // identificador del portero
+  formation?: Formation;
   problems: string[]; // lo que falta para empezar el partido (vacío = completa)
 }
 
@@ -85,7 +103,8 @@ const base = (teamId: string) => `/teams/${teamId}/matches`;
 export const getMatches = (teamId: string) => api<Match[]>(base(teamId));
 
 /** Rivales ya usados, para sugerirlos al escribir el nombre. */
-export const getOpponents = (teamId: string) => api<Opponent[]>(`${base(teamId)}/opponents`);
+export const getOpponents = (teamId: string) =>
+  api<Opponent[]>(`${base(teamId)}/opponents`);
 
 /** Programa un partido. */
 export const createMatch = (teamId: string, data: MatchData) =>
@@ -93,36 +112,56 @@ export const createMatch = (teamId: string, data: MatchData) =>
 
 /** Sustituye los datos de un partido (no su estado, resultado ni convocatoria). */
 export const updateMatch = (teamId: string, matchId: string, data: MatchData) =>
-  api<Match>(`${base(teamId)}/${matchId}`, { method: "PUT", body: JSON.stringify(data) });
+  api<Match>(`${base(teamId)}/${matchId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 
 /** Cambia el estado: pendiente, jugando o finalizado. */
-export const updateMatchStatus = (teamId: string, matchId: string, status: MatchStatus) =>
+export const updateMatchStatus = (
+  teamId: string,
+  matchId: string,
+  status: MatchStatus,
+) =>
   api<{
     id: string;
     status: MatchStatus;
     goalsFor?: number;
     goalsAgainst?: number;
     result?: MatchResult;
-  }>(`${base(teamId)}/${matchId}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+  }>(`${base(teamId)}/${matchId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
 
 /** Cambia el resultado. Solo mientras el partido está en juego. */
 export const updateMatchScore = (
   teamId: string,
   matchId: string,
   goalsFor: number,
-  goalsAgainst: number
+  goalsAgainst: number,
 ) =>
-  api<{ id: string; goalsFor: number; goalsAgainst: number }>(`${base(teamId)}/${matchId}/score`, {
-    method: "PATCH",
-    body: JSON.stringify({ goalsFor, goalsAgainst }),
-  });
+  api<{ id: string; goalsFor: number; goalsAgainst: number }>(
+    `${base(teamId)}/${matchId}/score`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ goalsFor, goalsAgainst }),
+    },
+  );
 
 /** Sustituye la convocatoria por la lista de jugadores enviada. */
-export const saveCallup = (teamId: string, matchId: string, players: string[]) =>
-  api<{ id: string; callup: string[]; removedStarters: number }>(`${base(teamId)}/${matchId}/callup`, {
-    method: "PUT",
-    body: JSON.stringify({ players }),
-  });
+export const saveCallup = (
+  teamId: string,
+  matchId: string,
+  players: string[],
+) =>
+  api<{ id: string; callup: string[]; removedStarters: number }>(
+    `${base(teamId)}/${matchId}/callup`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ players }),
+    },
+  );
 
 /** Borra un partido. */
 export const deleteMatch = (teamId: string, matchId: string) =>
@@ -130,8 +169,14 @@ export const deleteMatch = (teamId: string, matchId: string) =>
 
 // Lo que se envía al guardar la alineación: un elemento por cada convocado
 export interface LineupData {
-  players: { player: string; starter: boolean; jerseyNumber?: number }[];
+  players: {
+    player: string;
+    starter: boolean;
+    jerseyNumber?: number;
+    slot?: string;
+  }[];
   goalkeeper: string | null;
+  formation?: Formation;
 }
 
 /** Guarda la alineación: titulares, portero y dorsal de este partido de cada convocado. */
@@ -155,12 +200,22 @@ export interface MatchEventData {
 }
 
 /** Añade un evento al acta del partido. */
-export const addMatchEvent = (teamId: string, matchId: string, data: MatchEventData) =>
+export const addMatchEvent = (
+  teamId: string,
+  matchId: string,
+  data: MatchEventData,
+) =>
   api<{ id: string }>(`${base(teamId)}/${matchId}/events`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 
 /** Elimina un evento del acta. */
-export const deleteMatchEvent = (teamId: string, matchId: string, eventId: string) =>
-  api<void>(`${base(teamId)}/${matchId}/events/${eventId}`, { method: "DELETE" });
+export const deleteMatchEvent = (
+  teamId: string,
+  matchId: string,
+  eventId: string,
+) =>
+  api<void>(`${base(teamId)}/${matchId}/events/${eventId}`, {
+    method: "DELETE",
+  });
