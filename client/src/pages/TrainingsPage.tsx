@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Training } from "../api/trainings";
+import type { SquadPlayer } from "../api/players";
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
+import { usePlayers } from "../hooks/usePlayers";
 import { useTrainings } from "../hooks/useTrainings";
 import {
   TRAINING_STATUS_COLORS,
@@ -11,7 +13,112 @@ import {
   formatTrainingTime,
   todayIso,
 } from "../lib/trainings";
+import { canSeeStats } from "../lib/players";
 import TrainingForm from "../components/TrainingForm";
+
+function AttendanceHighlights({
+  trainings,
+  players,
+}: {
+  trainings: Training[];
+  players?: SquadPlayer[];
+}) {
+  const totals = trainings.reduce(
+    (result, training) => {
+      if (!training.attendance) return result;
+      result.present += training.attendance.present;
+      result.justified += training.attendance.justifiedAbsence;
+      result.unjustified += training.attendance.unjustifiedAbsence;
+      return result;
+    },
+    { present: 0, justified: 0, unjustified: 0 },
+  );
+  const recorded = totals.present + totals.justified + totals.unjustified;
+  if (recorded === 0) return null;
+
+  const mostPresent = players?.reduce<SquadPlayer | undefined>(
+    (leader, player) => {
+      const candidateAttendance = player.attendance;
+      const leaderAttendance = leader?.attendance;
+      if (!candidateAttendance || candidateAttendance.total === 0) return leader;
+      if (!leaderAttendance || leaderAttendance.total === 0) return player;
+
+      const candidateValue = candidateAttendance.present / candidateAttendance.total;
+      const leaderValue = leaderAttendance.present / leaderAttendance.total;
+      if (candidateValue > leaderValue) return player;
+      return leader;
+    },
+    undefined,
+  );
+  const attendancePercentage = Math.round((totals.present / recorded) * 100);
+  const playerName = mostPresent
+    ? mostPresent.nickname || `${mostPresent.name} ${mostPresent.surname}`
+    : "Sin datos";
+
+  const cards = [
+    {
+      label: "Asistencia general",
+      value: `${attendancePercentage}%`,
+      detail: `${totals.present} de ${recorded} registros`,
+      accent: "border-green-200 bg-green-50",
+    },
+    {
+      label: "Presentes",
+      value: totals.present,
+      detail: "asistencias registradas",
+      accent: "border-blue-200 bg-blue-50",
+    },
+    {
+      label: "Justificadas",
+      value: totals.justified,
+      detail: "ausencias",
+      accent: "border-amber-200 bg-amber-50",
+    },
+    {
+      label: "Sin justificar",
+      value: totals.unjustified,
+      detail: "ausencias",
+      accent: "border-red-200 bg-red-50",
+    },
+  ];
+
+  return (
+    <section className="mb-6" aria-label="Estadísticas de asistencia">
+      <h2 className="mb-2 text-lg font-semibold">Asistencia</h2>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        {cards.map((card) => (
+          <div key={card.label} className={`min-h-28 rounded-lg border p-4 ${card.accent}`}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+              {card.label}
+            </p>
+            <p className="mt-2 text-2xl font-bold tabular-nums text-gray-900">{card.value}</p>
+            <p className="mt-1 text-xs text-gray-600">{card.detail}</p>
+          </div>
+        ))}
+        <div className="min-h-28 rounded-lg border border-violet-200 bg-violet-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Mejor porcentaje
+          </p>
+          {mostPresent ? (
+            <Link
+              to={`/plantilla/${mostPresent.id}`}
+              className="mt-2 block truncate font-semibold text-gray-900 hover:underline"
+            >
+              {playerName}
+            </Link>
+          ) : (
+            <p className="mt-2 truncate font-semibold text-gray-500">{playerName}</p>
+          )}
+          <p className="mt-1 text-sm text-gray-600">
+            {mostPresent?.attendance
+              ? `${Math.round((mostPresent.attendance.present / mostPresent.attendance.total) * 100)}% de asistencia`
+              : "Sin datos"}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 /** Tarjeta de un entreno en la lista: fecha, hora, lugar, objetivos y asistencia. */
 function TrainingCard({ training }: { training: Training }) {
@@ -59,12 +166,14 @@ function TrainingCard({ training }: { training: Training }) {
 function TrainingsPage() {
   const { current } = useCurrentTeam();
   const { data: trainings, isPending, isError } = useTrainings(current?.team?._id);
+  const { data: players } = usePlayers(current?.team?._id);
   const [showForm, setShowForm] = useState(false);
 
   // RequireTeam garantiza que hay equipo; esto cubre el instante de carga
   if (!current || !current.team) return <p className="p-6">Cargando...</p>;
 
   const canManage = canManageTrainings(current.role);
+  const showStats = canSeeStats(current.role);
 
   // El servidor los envía ordenados de más antiguo a más reciente
   const today = todayIso();
@@ -105,6 +214,10 @@ function TrainingsPage() {
 
       {isPending && <p>Cargando entrenos...</p>}
       {isError && <p className="text-red-600">No se han podido cargar los entrenos.</p>}
+
+      {showStats && trainings && trainings.length > 0 && (
+        <AttendanceHighlights trainings={trainings} players={players} />
+      )}
 
       {trainings && trainings.length === 0 && !showForm && (
         <p className="rounded border border-dashed border-gray-300 p-6 text-center text-gray-600">
