@@ -32,6 +32,7 @@ interface PlayerFormProps {
   // Si se indica, el formulario edita a ese jugador; si no, crea uno nuevo
   player?: SquadPlayer;
   onDone: () => void;
+  showTitle?: boolean;
 }
 
 // Datos principales del formulario. Los números se guardan como texto
@@ -91,7 +92,14 @@ const toOptions = (labels: Record<string, string>) =>
  * la plantilla de la temporada actual; con ella, edita los datos de ese
  * jugador, que aparecen ya rellenos.
  */
-function PlayerForm({ teamId, role, defaultCategory, player, onDone }: PlayerFormProps) {
+function PlayerForm({
+  teamId,
+  role,
+  defaultCategory,
+  player,
+  onDone,
+  showTitle = true,
+}: PlayerFormProps) {
   const isEditing = Boolean(player);
 
   const [form, setForm] = useState<FormState>({
@@ -219,7 +227,11 @@ function PlayerForm({ teamId, role, defaultCategory, player, onDone }: PlayerFor
       onSubmit={handleSubmit}
       className="space-y-4 rounded border border-gray-200 p-4"
     >
-      <h2 className="text-lg font-semibold">{isEditing ? "Editar jugador" : "Añadir jugador"}</h2>
+      {showTitle && (
+        <h2 className="text-lg font-semibold">
+          {isEditing ? "Editar jugador" : "Añadir jugador"}
+        </h2>
+      )}
 
       {/* Datos de la persona */}
       <div className="grid grid-cols-2 gap-4">

@@ -1,9 +1,85 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { usePlayers } from "../hooks/usePlayers";
 import { canEditSquad, canSeeStats } from "../lib/players";
+import Modal from "../components/Modal";
 import PlayerForm from "../components/PlayerForm";
 import SquadTable, { type GroupMode } from "../components/SquadTable";
+
+type LeaderStat = "minutes" | "played" | "goals" | "assists";
+
+const LEADER_STATS: Array<{
+  key: LeaderStat;
+  label: string;
+  suffix: string;
+  accent: string;
+}> = [
+  { key: "minutes", label: "Más minutos", suffix: "min", accent: "border-blue-200 bg-blue-50" },
+  { key: "played", label: "Más partidos", suffix: "PJ", accent: "border-violet-200 bg-violet-50" },
+  { key: "goals", label: "Máximo goleador", suffix: "goles", accent: "border-amber-200 bg-amber-50" },
+  { key: "assists", label: "Más asistencias", suffix: "asistencias", accent: "border-emerald-200 bg-emerald-50" },
+];
+
+function SquadLeaders({
+  players,
+}: {
+  players: NonNullable<ReturnType<typeof usePlayers>["data"]>;
+}) {
+  const leaders = LEADER_STATS.map((stat) => {
+    const player = players.reduce<typeof players[number] | undefined>(
+      (leader, candidate) => {
+        const candidateValue = candidate.stats?.[stat.key];
+        const leaderValue = leader?.stats?.[stat.key];
+        if (candidateValue === undefined) return leader;
+        if (leaderValue === undefined || candidateValue > leaderValue) return candidate;
+        return leader;
+      },
+      undefined,
+    );
+
+    return { stat, player };
+  });
+
+  if (leaders.every(({ player }) => !player)) return null;
+
+  return (
+    <section className="mb-6" aria-label="Líderes estadísticos">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {leaders.map(({ stat, player }) => {
+          const value = player?.stats?.[stat.key];
+          const name = player
+            ? player.nickname || `${player.name} ${player.surname}`
+            : "Sin datos";
+
+          return (
+            <div
+              key={stat.key}
+              className={`min-h-32 rounded-lg border p-4 ${stat.accent}`}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                {stat.label}
+              </p>
+              {player ? (
+                <Link
+                  to={`/plantilla/${player.id}`}
+                  className="mt-3 block truncate font-semibold text-gray-900 hover:underline"
+                >
+                  {name}
+                </Link>
+              ) : (
+                <p className="mt-3 font-semibold text-gray-500">{name}</p>
+              )}
+              <p className="mt-1 text-2xl font-bold tabular-nums text-gray-900">
+                {value ?? 0} <span className="text-sm font-medium text-gray-600">{stat.suffix}</span>
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
 /**
  * Plantilla de la temporada actual: tabla a todo el ancho con las
@@ -62,18 +138,25 @@ function SquadPage() {
 
       {/* El formulario se queda estrecho aunque la página sea ancha */}
       {showForm && (
-        <div className="mb-6 max-w-2xl">
+        <Modal
+          title="Añadir jugador"
+          onClose={() => setShowForm(false)}
+          className="max-w-2xl"
+        >
           <PlayerForm
             teamId={current.team._id}
             role={current.role}
             defaultCategory={current.currentSeason.category}
             onDone={() => setShowForm(false)}
+            showTitle={false}
           />
-        </div>
+        </Modal>
       )}
 
       {isPending && <p>Cargando plantilla...</p>}
       {isError && <p className="text-red-600">No se ha podido cargar la plantilla.</p>}
+
+      {showStats && players && players.length > 0 && <SquadLeaders players={players} />}
 
       {players && players.length === 0 && !showForm && (
         <p className="rounded border border-dashed border-gray-300 p-6 text-center text-gray-600">
