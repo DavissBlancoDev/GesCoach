@@ -3,7 +3,7 @@ import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { usePlayers } from "../hooks/usePlayers";
 import { canEditSquad, canSeeStats } from "../lib/players";
 import PlayerForm from "../components/PlayerForm";
-import SquadTable from "../components/SquadTable";
+import SquadTable, { type GroupMode } from "../components/SquadTable";
 
 /**
  * Plantilla de la temporada actual: tabla a todo el ancho con las
@@ -14,6 +14,7 @@ function SquadPage() {
   const { current } = useCurrentTeam();
   const { data: players, isPending, isError } = usePlayers(current?.team?._id);
   const [showForm, setShowForm] = useState(false);
+  const [groupMode, setGroupMode] = useState<GroupMode>("none");
 
   // RequireTeam garantiza que hay equipo; esto cubre el instante de carga
   if (!current || !current.team || !current.currentSeason) {
@@ -34,6 +35,20 @@ function SquadPage() {
             </p>
           )}
         </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="squad-group-mode" className="text-sm font-medium text-gray-700">
+            Agrupar por...
+          </label>
+          <select
+            id="squad-group-mode"
+            value={groupMode}
+            onChange={(event) => setGroupMode(event.target.value as GroupMode)}
+            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="none">Sin agrupar</option>
+            <option value="position">Posición</option>
+            <option value="license">Ficha</option>
+          </select>
         {canEdit && !showForm && (
           <button
             onClick={() => setShowForm(true)}
@@ -42,6 +57,7 @@ function SquadPage() {
             Añadir jugador
           </button>
         )}
+        </div>
       </div>
 
       {/* El formulario se queda estrecho aunque la página sea ancha */}
@@ -65,7 +81,7 @@ function SquadPage() {
         </p>
       )}
 
-      {players && players.length > 0 && <SquadTable players={players} showStats={showStats} />}
+      {players && players.length > 0 && <SquadTable players={players} showStats={showStats} groupMode={groupMode} />}
     </main>
   );
 }
