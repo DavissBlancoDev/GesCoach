@@ -20,7 +20,7 @@ const eventLabels: Record<MatchEventType, string> = {
   red_card: "Roja",
   substitution: "Cambio",
 };
-type EventIconKind =
+export type EventIconKind =
   | "goal"
   | "penalty"
   | "ownGoal"
@@ -28,7 +28,7 @@ type EventIconKind =
   | "red"
   | "substitution";
 
-function EventIcon({ kind }: { kind: EventIconKind }) {
+export function EventIcon({ kind }: { kind: EventIconKind }) {
   const common = {
     viewBox: "0 0 24 24",
     fill: "none",

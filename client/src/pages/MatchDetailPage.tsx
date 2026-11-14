@@ -6,10 +6,12 @@ import {
   updateMatchScore,
   updateMatchStatus,
   type Match,
+  type MatchEvent,
   type MatchStatus,
 } from "../api/matches";
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { useMatches } from "../hooks/useMatches";
+import { usePlayers } from "../hooks/usePlayers";
 import {
   MATCH_STATUS_COLORS,
   MATCH_STATUS_LABELS,
@@ -24,11 +26,219 @@ import {
   matchTimeLabel,
 } from "../lib/matches";
 import { getFieldErrors } from "../api/client";
+import { GROUP_COLORS, type Position } from "../lib/positions";
 import CallupPanel from "../components/CallupPanel";
-import LineupPanel from "../components/LineupPanel";
-import MatchEventsPanel from "../components/MatchEventsPanel";
+import LineupPanel, { FORMATIONS } from "../components/LineupPanel";
+import MatchEventsPanel, { EventIcon } from "../components/MatchEventsPanel";
 import DefaultBadge from "../components/DefaultBadge";
 import MatchForm from "../components/MatchForm";
+
+function MatchSummary({
+  match,
+  teamName,
+  players,
+}: {
+  match: Match;
+  teamName: string;
+  players?: Array<{
+    id: string;
+    name: string;
+    surname: string;
+    nickname?: string;
+    jerseyNumber?: number;
+    mainPosition: Position;
+  }>;
+}) {
+  const nameOf = (id?: string) => {
+    const player = players?.find((item) => item.id === id);
+    return player ? player.nickname || `${player.name} ${player.surname}` : "Jugador";
+  };
+  const starters = (match.lineup?.players ?? []).filter((player) => player.starter);
+  const formation = match.lineup?.formation ?? "4-4-2";
+  const playerBySlot = new Map(
+    starters
+      .filter((starter) => starter.slot)
+      .map((starter) => [starter.slot as string, starter]),
+  );
+  const goalkeeper =
+    starters.find((starter) => starter.player === match.lineup?.goalkeeper) ??
+    starters.find((starter) => starter.slot === "gk");
+  const jerseyOf = (playerId: string, matchJersey?: number) =>
+    matchJersey ?? players?.find((player) => player.id === playerId)?.jerseyNumber;
+  const playerOf = (playerId: string) => players?.find((player) => player.id === playerId);
+  const goals = (match.events ?? [])
+    .filter((event) => event.type === "goal")
+    .sort((a, b) => a.minute - b.minute);
+  const statistics = [
+    ["Goles", match.goalsFor ?? 0, match.goalsAgainst ?? 0],
+    ["Tiros", "—", "—"],
+    ["Tiros a puerta", "—", "—"],
+    ["Faltas", "—", "—"],
+    ["Córners", "—", "—"],
+    ["Fueras de juego", "—", "—"],
+  ] as const;
+
+  const sideName = (event: MatchEvent) =>
+    event.side === "for" ? teamName : match.opponent.name;
+  const isGoalOnRight = (event: MatchEvent) =>
+    match.venue === "away" ? event.side === "for" : event.side !== "for";
+  const goalDescription = (event: MatchEvent) =>
+    event.ownGoal
+      ? "Gol en propia meta"
+      : event.side === "against"
+        ? "Gol rival"
+        : event.penalty
+          ? "Gol de penalti"
+          : "Gol";
+  const goalActor = (event: MatchEvent) =>
+    event.player && (event.side === "for" || event.ownGoal)
+      ? nameOf(event.player)
+      : sideName(event);
+
+  return (
+    <section className="mt-6 space-y-4" aria-label="Resumen del partido">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded border border-gray-200 p-4">
+          <h2 className="text-lg font-semibold">11 inicial</h2>
+          {starters.length > 0 ? (
+            <div
+              className="relative mt-3 overflow-hidden rounded-lg border-4 border-green-800 bg-green-600 px-3 py-4"
+              aria-label={`Alineación inicial${match.lineup?.formation ? ` en ${match.lineup.formation}` : ""}`}
+            >
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 border-t border-white/80" />
+              <div className="pointer-events-none absolute -bottom-14 left-1/2 h-28 w-28 -translate-x-1/2 rounded-full border-2 border-white/70" />
+              <div className="pointer-events-none absolute inset-x-[14%] top-0 h-28 border-x-2 border-b-2 border-white/60" />
+              <div className="pointer-events-none absolute inset-x-[30%] top-0 h-12 border-x-2 border-b-2 border-white/60" />
+              <div className="relative z-10 flex min-h-[22rem] flex-col justify-between gap-5 py-2 pb-5">
+                <div className="flex justify-center">
+                  {goalkeeper && (
+                    <div
+                      className="flex min-w-0 max-w-[5rem] flex-col items-center text-center text-xs text-white"
+                      title={nameOf(goalkeeper.player)}
+                    >
+                      <span className={`flex h-9 w-9 items-center justify-center rounded-full border-2 border-white font-bold shadow ${GROUP_COLORS.portero}`}>
+                        {jerseyOf(goalkeeper.player, goalkeeper.jerseyNumber) ?? "—"}
+                      </span>
+                      <span className="mt-1 truncate font-bold">{nameOf(goalkeeper.player)}</span>
+                    </div>
+                  )}
+                </div>
+                {FORMATIONS[formation].map((rowSlots) => (
+                  <div
+                    key={rowSlots.map((slot) => slot.id).join("-")}
+                    className="grid items-start gap-1"
+                    style={{ gridTemplateColumns: `repeat(${rowSlots.length}, minmax(0, 1fr))` }}
+                  >
+                    {rowSlots.map((slot) => {
+                      const starter = playerBySlot.get(slot.id);
+                      return (
+                        <div key={slot.id} className="flex min-h-[3.75rem] justify-center">
+                          {starter && (
+                            <div
+                              className="flex min-w-0 max-w-[5rem] flex-col items-center text-center text-xs text-white"
+                              title={nameOf(starter.player)}
+                            >
+                              <span className={`flex h-9 w-9 items-center justify-center rounded-full border-2 border-white font-bold shadow ${GROUP_COLORS[slot.group]}`}>
+                                {jerseyOf(starter.player, starter.jerseyNumber) ?? "—"}
+                              </span>
+                              <span className="mt-1 truncate font-bold">{nameOf(starter.player)}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-gray-600">Aún no hay alineación registrada.</p>
+          )}
+        </section>
+
+        <section className="rounded border border-gray-200 p-4">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-lg font-semibold">Goles</h2>
+            <span className="text-sm text-gray-500">{goals.length} registrados</span>
+          </div>
+          {goals.length > 0 ? (
+            <ul className="mt-3 divide-y divide-gray-100 rounded border border-gray-200">
+              {goals.map((event) => (
+                <li
+                  key={event.id}
+                  className="grid grid-cols-[minmax(0,1fr)_4rem_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-sm"
+                >
+                  <span
+                    className={`row-start-1 flex min-w-0 items-center gap-2 ${
+                      isGoalOnRight(event)
+                        ? "col-start-3 justify-start text-left"
+                        : "col-start-1 justify-end text-right"
+                    }`}
+                  >
+                    {isGoalOnRight(event) ? (
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold">
+                          {goalActor(event)}
+                        </span>
+                        <span className="block truncate text-xs text-gray-600">
+                          {goalDescription(event)}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold">
+                          {goalActor(event)}
+                        </span>
+                        <span className="block truncate text-xs text-gray-600">
+                          {goalDescription(event)}
+                        </span>
+                      </span>
+                    )}
+                  </span>
+                  <span className="col-start-2 row-start-1 flex flex-col items-center justify-center gap-0.5 text-gray-500">
+                    <EventIcon
+                      kind={event.ownGoal ? "ownGoal" : event.penalty ? "penalty" : "goal"}
+                    />
+                    <span className="font-semibold tabular-nums">{event.minute}'</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-sm text-gray-600">Todavía no hay goles registrados.</p>
+          )}
+        </section>
+      </div>
+
+      <section className="rounded border border-gray-200 p-4">
+        <h2 className="text-lg font-semibold">Estadísticas del partido</h2>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[22rem] text-sm">
+            <thead className="border-b border-gray-200 text-gray-600">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium">Estadística</th>
+                <th className="px-3 py-2 text-center font-medium">{teamName}</th>
+                <th className="px-3 py-2 text-center font-medium">{match.opponent.name}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {statistics.map(([label, ours, theirs]) => (
+                <tr key={label}>
+                  <th className="px-3 py-2 text-left font-normal text-gray-700">{label}</th>
+                  <td className="px-3 py-2 text-center font-semibold tabular-nums">{ours}</td>
+                  <td className="px-3 py-2 text-center font-semibold tabular-nums">{theirs}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          Las estadísticas detalladas se podrán registrar más adelante.
+        </p>
+      </section>
+    </section>
+  );
+}
 
 interface ScoreboardProps {
   match: Match;
@@ -131,6 +341,7 @@ function MatchDetailPage() {
   const { current } = useCurrentTeam();
   const teamId = current?.team?._id;
   const { data: matches, isPending, isError } = useMatches(teamId);
+  const { data: players } = usePlayers(teamId);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -366,6 +577,12 @@ function MatchDetailPage() {
 
               {activeTab === "summary" && (
                 <>
+                  <MatchSummary
+                    match={match}
+                    teamName={team.name}
+                    players={players}
+                  />
+
                   {/* Cambio de estado: pendiente -> jugando -> finalizado */}
                   {canRecord && (
                     <div className="mt-4 space-y-2">

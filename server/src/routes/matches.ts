@@ -603,8 +603,8 @@ router.put<MatchParams>("/:matchId/callup", async (req, res) => {
 /**
  * PUT /api/teams/:teamId/matches/:matchId/lineup
  * Guarda la alineación: quiénes son titulares, el portero y el dorsal de
- * este partido de cada convocado. Solo con el partido pendiente y solo el
- * entrenador principal. Se puede guardar incompleta; para empezar el partido
+ * este partido de cada convocado. Con el partido pendiente o jugando y solo
+ * el entrenador principal. Se puede guardar incompleta; para empezar el partido
  * tendrá que estar completa.
  *
  * Reglas:
@@ -632,8 +632,8 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
   if (!match) {
     return res.status(404).json({ error: "Partido no encontrado" });
   }
-  if (match.status !== "pending") {
-    return res.status(409).json({ error: "La alineación solo se puede cambiar con el partido pendiente" });
+  if (match.status !== "pending" && match.status !== "playing") {
+    return res.status(409).json({ error: "La alineación solo se puede cambiar con el partido pendiente o jugando" });
   }
 
   const season = await Season.findById(match.season);

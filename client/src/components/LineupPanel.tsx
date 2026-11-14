@@ -73,7 +73,7 @@ function row(prefix: string, labels: string[]): SlotSpec[] {
   }));
 }
 
-const FORMATIONS: Record<Formation, SlotSpec[][]> = {
+export const FORMATIONS: Record<Formation, SlotSpec[][]> = {
   "4-4-2": [
     row("def", ["LI", "DFC", "DFC", "LD"]),
     row("mid", ["MI", "MC", "MC", "MD"]),
@@ -195,7 +195,7 @@ function LineupPanel({ teamId, match, canEdit }: LineupPanelProps) {
   const queryClient = useQueryClient();
   const lineup = match.lineup;
   const required = lineup?.startersRequired ?? 11;
-  const editable = canEdit && match.status === "pending";
+  const editable = canEdit && (match.status === "pending" || match.status === "playing");
   const [formation, setFormation] = useState<Formation>(
     lineup?.formation ?? "4-4-2",
   );
@@ -744,7 +744,7 @@ function LineupPanel({ teamId, match, canEdit }: LineupPanelProps) {
       )}
       {!editable && match.status !== "pending" && (
         <p className="mt-3 text-xs text-gray-500">
-          La alineación solo se puede cambiar con el partido pendiente.
+          La alineación no se puede cambiar con este estado del partido.
         </p>
       )}
     </section>
