@@ -61,6 +61,9 @@ function AppLayout() {
             <NavLink to="/calendario" className={linkClass}>
               Calendario
             </NavLink>
+            <NavLink to="/estadisticas" className={linkClass}>
+              Estadísticas
+            </NavLink>
           </nav>
         </div>
       </header>

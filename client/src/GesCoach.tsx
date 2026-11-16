@@ -12,6 +12,7 @@ import TrainingDetailPage from "./pages/TrainingDetailPage";
 import MatchesPage from "./pages/MatchesPage";
 import MatchDetailPage from "./pages/MatchDetailPage";
 import CalendarPage from "./pages/CalendarPage";
+import StatsPage from "./pages/StatsPage";
 import ProfilePage from "./pages/ProfilePage";
 import ClubSettingsPage from "./pages/ClubSettingsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -43,6 +44,7 @@ function GesCoach() {
             <Route path="/partidos" element={<MatchesPage />} />
             <Route path="/partidos/:matchId" element={<MatchDetailPage />} />
             <Route path="/calendario" element={<CalendarPage />} />
+            <Route path="/estadisticas" element={<StatsPage />} />
             <Route path="/perfil" element={<ProfilePage />} />
             <Route path="/ajustes" element={<ClubSettingsPage />} />
           </Route>

@@ -80,3 +80,101 @@ export function matchPlayerStats(match: Match, playerId: string) {
     redCards: events.filter((event) => event.type === "red_card" && event.player === playerId).length,
   };
 }
+
+export interface SeasonStats {
+  played: number;
+  leaguePlayed: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  cleanSheets: number;
+  points: number;
+}
+
+export interface MatchStatPoint {
+  match: Match;
+  difference: number;
+  yellowFor: number;
+  redFor: number;
+  yellowAgainst: number;
+  redAgainst: number;
+}
+
+export interface PlayerCardStats {
+  yellowCards: number;
+  redCards: number;
+}
+
+/** Resumen de los partidos finalizados de la temporada. */
+export function seasonStats(matches: Match[]): SeasonStats {
+  const finished = matches.filter((match) => match.status === "finished");
+  const league = finished.filter((match) => match.competition === "league");
+  const wins = finished.filter((match) => match.result === "win").length;
+  const draws = finished.filter((match) => match.result === "draw").length;
+  const leagueWins = league.filter((match) => match.result === "win").length;
+  const leagueDraws = league.filter((match) => match.result === "draw").length;
+  const goalsFor = finished.reduce((total, match) => total + (match.goalsFor ?? 0), 0);
+  const goalsAgainst = finished.reduce((total, match) => total + (match.goalsAgainst ?? 0), 0);
+
+  return {
+    played: finished.length,
+    leaguePlayed: league.length,
+    wins,
+    draws,
+    losses: finished.length - wins - draws,
+    goalsFor,
+    goalsAgainst,
+    cleanSheets: finished.filter((match) => (match.goalsAgainst ?? 0) === 0).length,
+    points: leagueWins * 3 + leagueDraws,
+  };
+}
+
+/** Datos por partido para gráficas y listados de análisis. */
+export function matchStatPoints(matches: Match[], ourPlayerIds?: ReadonlySet<string>): MatchStatPoint[] {
+  return matches
+    .filter((match) => match.status === "finished")
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((match) => {
+      const events = match.events ?? [];
+      const cards = (type: "yellow_card" | "red_card", side: "for" | "against") =>
+        events.filter((event) => {
+          if (event.type !== type) return false;
+          // El jugador es la fuente más fiable para nuestras tarjetas. El
+          // side se conserva como fallback para las tarjetas del rival.
+          const isOurs = event.player && ourPlayerIds?.has(event.player);
+          return isOurs ? side === "for" : event.side === side;
+        }).length;
+
+      return {
+        match,
+        difference: (match.goalsFor ?? 0) - (match.goalsAgainst ?? 0),
+        yellowFor: cards("yellow_card", "for"),
+        redFor: cards("red_card", "for"),
+        yellowAgainst: cards("yellow_card", "against"),
+        redAgainst: cards("red_card", "against"),
+      };
+    });
+}
+
+/**
+ * Recuento de tarjetas directamente desde las actas. Se incluyen también
+ * partidos en juego, porque una tarjeta registrada ya debe aparecer en la
+ * temporada aunque el partido todavía no haya terminado.
+ */
+export function playerCardStats(matches: Match[]): Map<string, PlayerCardStats> {
+  const result = new Map<string, PlayerCardStats>();
+
+  for (const match of matches) {
+    for (const event of match.events ?? []) {
+      if ((event.type !== "yellow_card" && event.type !== "red_card") || !event.player) continue;
+      const current = result.get(event.player) ?? { yellowCards: 0, redCards: 0 };
+      if (event.type === "yellow_card") current.yellowCards += 1;
+      else current.redCards += 1;
+      result.set(event.player, current);
+    }
+  }
+
+  return result;
+}
