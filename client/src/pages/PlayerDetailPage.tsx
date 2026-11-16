@@ -9,9 +9,11 @@ import {
 } from "../api/players";
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import { usePlayers } from "../hooks/usePlayers";
+import { useMatches } from "../hooks/useMatches";
 import { countryName } from "../lib/countries";
 import { POSITION_LABELS } from "../lib/positions";
-import { STAT_COLUMNS, isGoalkeeper } from "../lib/stats";
+import { matchPlayerStats, STAT_COLUMNS, isGoalkeeper } from "../lib/stats";
+import { RESULT_STYLES, formatMatchDateShort } from "../lib/matches";
 import {
   PLAYER_STATUS_COLORS,
   PLAYER_STATUS_LABELS,
@@ -67,6 +69,7 @@ function PlayerDetailPage() {
   const { current } = useCurrentTeam();
   const teamId = current?.team?._id;
   const { data: players, isPending, isError } = usePlayers(teamId);
+  const { data: matches, isPending: matchesPending } = useMatches(teamId);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -117,6 +120,10 @@ function PlayerDetailPage() {
   const displayName = player.nickname || player.name;
   const goalkeeper = isGoalkeeper(player);
   const salary = player.contract?.salary;
+  const playerMatches = (matches ?? [])
+    .filter((match) => match.status !== "pending" && match.callup?.includes(player.id))
+    .slice()
+    .reverse();
 
   // Estados a los que este rol puede cambiar al jugador desde su estado actual
   const allowedStatuses = PLAYER_STATUS_LIST.filter(
@@ -356,10 +363,54 @@ function PlayerDetailPage() {
 
             <section className="rounded border border-gray-200 p-4">
               <h2 className="mb-3 text-lg font-semibold">Historial de partidos</h2>
-              <p className="text-sm text-gray-600">
-                Aún no hay partidos. Aquí aparecerán la convocatoria, los minutos y los goles de
-                cada partido.
-              </p>
+              {matchesPending ? (
+                <p className="text-sm text-gray-600">Cargando partidos...</p>
+              ) : playerMatches.length === 0 ? (
+                <p className="text-sm text-gray-600">Aún no hay partidos registrados para este jugador.</p>
+              ) : (
+                <div className="space-y-2">
+                  {playerMatches.map((match) => {
+                    const style = match.result ? RESULT_STYLES[match.result] : undefined;
+                    const stats = matchPlayerStats(match, player.id);
+                    return (
+                      <Link
+                        key={match.id}
+                        to={`/partidos/${match.id}`}
+                        className={`block rounded border p-3 transition hover:brightness-95 ${
+                          style?.box ?? "border-gray-200 bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold">vs {match.opponent.name}</p>
+                            <p className="text-xs text-gray-600">{formatMatchDateShort(match.date)}</p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2 text-right">
+                            {style && (
+                              <span className="text-sm font-bold" title={style.label}>
+                                {style.letter}
+                              </span>
+                            )}
+                            <span className="font-semibold tabular-nums">
+                              {match.goalsFor ?? "–"} - {match.goalsAgainst ?? "–"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-700">
+                          <span className={stats.starter ? "font-semibold" : ""}>
+                            {stats.starter ? "Titular" : "Suplente"}
+                          </span>
+                          <span>{stats.minutes}′</span>
+                          <span>⚽ {stats.goals}</span>
+                          <span>↗ {stats.assists}</span>
+                          <span>🟨 {stats.yellowCards}</span>
+                          <span>🟥 {stats.redCards}</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           </div>
         </div>

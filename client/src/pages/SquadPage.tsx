@@ -9,6 +9,10 @@ import SquadTable, { type GroupMode } from "../components/SquadTable";
 
 type LeaderStat = "minutes" | "played" | "goals" | "assists";
 
+// Se conserva mientras la aplicación siga abierta, pero se reinicia al
+// recargar la página. Así no se pierde al entrar y salir de un perfil.
+let squadGroupMode: GroupMode = "none";
+
 const LEADER_STATS: Array<{
   key: LeaderStat;
   label: string;
@@ -90,7 +94,12 @@ function SquadPage() {
   const { current } = useCurrentTeam();
   const { data: players, isPending, isError } = usePlayers(current?.team?._id);
   const [showForm, setShowForm] = useState(false);
-  const [groupMode, setGroupMode] = useState<GroupMode>("none");
+  const [groupMode, setGroupMode] = useState<GroupMode>(() => squadGroupMode);
+
+  function changeGroupMode(mode: GroupMode) {
+    squadGroupMode = mode;
+    setGroupMode(mode);
+  }
 
   // RequireTeam garantiza que hay equipo; esto cubre el instante de carga
   if (!current || !current.team || !current.currentSeason) {
@@ -118,7 +127,7 @@ function SquadPage() {
           <select
             id="squad-group-mode"
             value={groupMode}
-            onChange={(event) => setGroupMode(event.target.value as GroupMode)}
+            onChange={(event) => changeGroupMode(event.target.value as GroupMode)}
             className="rounded border border-gray-300 bg-white px-3 py-2 text-sm"
           >
             <option value="none">Sin agrupar</option>

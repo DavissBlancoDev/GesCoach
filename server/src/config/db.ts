@@ -6,5 +6,5 @@ export async function connectDB() {
     throw new Error("Falta la variable MONGODB_URI");
   }
   await mongoose.connect(uri);
-  console.log("Conectado a MongoDB");
+  console.log("✅🔌 Conectado a MongoDB");
 }
