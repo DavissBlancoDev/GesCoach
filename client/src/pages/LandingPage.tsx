@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useSession } from "../hooks/useSession";
 
 const features = [
@@ -20,7 +20,20 @@ const features = [
 ];
 
 function LandingPage() {
-  const { data: user } = useSession();
+  const { data: user, isPending } = useSession();
+
+  if (isPending) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#f5f7f2]">
+        <div className="flex flex-col items-center gap-4 text-[#173b2b]">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#173b2b] text-xl font-bold text-[#d7f264] shadow-sm">G</span>
+          <span className="text-sm font-medium text-[#718078]">Cargando tu espacio...</span>
+        </div>
+      </main>
+    );
+  }
+
+  if (user) return <Navigate to="/inicio" replace />;
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#f7f8f4] text-[#16231d]">
