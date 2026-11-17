@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import GesCoach from "./GesCoach";
 import "./index.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 const queryClient = new QueryClient();
 

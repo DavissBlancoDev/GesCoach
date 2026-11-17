@@ -280,7 +280,7 @@ export function SanctionBlock({
             onClick={() => setDialogOpen(true)}
             className="rounded px-2 py-1 text-xl hover:bg-gray-100"
           >
-            ⚙️
+            <i aria-hidden="true" className="bi bi-gear text-xl" />
           </button>
         )}
       </div>
@@ -297,9 +297,7 @@ export function SanctionBlock({
                 to={`/plantilla/${p.id}`}
                 className="flex items-center gap-3 rounded border-2 border-red-500 bg-red-50 p-3 hover:bg-red-100"
               >
-                <span aria-hidden="true" className="text-2xl">
-                  🚨
-                </span>
+                <i aria-hidden="true" className="bi bi-exclamation-triangle-fill text-2xl text-red-600" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold text-red-900">
                     {p.nickname || `${p.name} ${p.surname}`}

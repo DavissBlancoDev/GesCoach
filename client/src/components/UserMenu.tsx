@@ -4,11 +4,7 @@ import { useSession } from "../hooks/useSession";
 import { useLogout } from "../hooks/useLogout";
 import Avatar from "./Avatar";
 
-/**
- * Menú desplegable del usuario: "Hola, [nombre]" con su foto de iniciales, y
- * dentro Mi perfil, Ajustes del club y Cerrar sesión. Se cierra al elegir una
- * opción, al pulsar fuera o con la tecla Escape.
- */
+/** Menú desplegable del usuario con las acciones de perfil, ajustes y salida. */
 function UserMenu() {
   const { data: user } = useSession();
   const logoutMutation = useLogout();
@@ -44,9 +40,7 @@ function UserMenu() {
       >
         {user && <Avatar name={user.name} surname={user.surname} size="sm" />}
         <span className="max-w-32 truncate text-sm font-medium">Hola, {user?.name}</span>
-        <span aria-hidden="true" className="text-xs text-gray-500">
-          ▾
-        </span>
+        <i aria-hidden="true" className="bi bi-chevron-down text-xs text-gray-500" />
       </button>
 
       {open && (
@@ -55,10 +49,10 @@ function UserMenu() {
           className="absolute right-0 z-40 mt-1 w-52 rounded border border-gray-200 bg-white py-1 shadow-lg"
         >
           <Link role="menuitem" to="/perfil" onClick={() => setOpen(false)} className={itemClass}>
-            <span aria-hidden="true">👤</span> Mi perfil
+            <i aria-hidden="true" className="bi bi-person text-base" /> Mi perfil
           </Link>
           <Link role="menuitem" to="/ajustes" onClick={() => setOpen(false)} className={itemClass}>
-            <span aria-hidden="true">⚙️</span> Ajustes del club
+            <i aria-hidden="true" className="bi bi-gear text-base" /> Ajustes del club
           </Link>
           <button
             role="menuitem"
@@ -66,7 +60,7 @@ function UserMenu() {
             onClick={() => logoutMutation.mutate()}
             className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
           >
-            <span aria-hidden="true">🚪</span> Cerrar sesión
+            <i aria-hidden="true" className="bi bi-box-arrow-right text-base" /> Cerrar sesión
           </button>
         </div>
       )}
