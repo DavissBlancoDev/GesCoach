@@ -14,6 +14,8 @@ import {
   ATTENDANCE_OPTIONS,
   TRAINING_STATUS_COLORS,
   TRAINING_STATUS_LABELS,
+  TRAINING_TYPE_COLORS,
+  TRAINING_TYPE_LABELS,
   canManageTrainings,
   formatTrainingDate,
   formatTrainingTime,
@@ -250,6 +252,9 @@ function TrainingDetailPage() {
             className={`mt-2 inline-block rounded-full px-3 py-0.5 text-xs font-medium ${TRAINING_STATUS_COLORS[training.status]}`}
           >
             {TRAINING_STATUS_LABELS[training.status]}
+          </span>
+          <span className={`ml-2 inline-block rounded-full px-3 py-0.5 text-xs font-medium ${TRAINING_TYPE_COLORS[training.type]}`}>
+            {TRAINING_TYPE_LABELS[training.type]}
           </span>
         </div>
 

@@ -12,6 +12,8 @@ import {
   formatTrainingDate,
   formatTrainingTime,
   todayIso,
+  TRAINING_TYPE_COLORS,
+  TRAINING_TYPE_LABELS,
 } from "../lib/trainings";
 import { canSeeStats } from "../lib/players";
 import TrainingForm from "../components/TrainingForm";
@@ -133,12 +135,8 @@ function TrainingCard({ training }: { training: Training }) {
         className="block rounded border border-gray-200 p-3 hover:bg-gray-50"
       >
         <div className="flex items-start justify-between gap-2">
-          <p className="font-medium">{formatTrainingDate(training.date)}</p>
-          <span
-            className={`shrink-0 rounded px-2 py-0.5 text-xs ${TRAINING_STATUS_COLORS[training.status]}`}
-          >
-            {TRAINING_STATUS_LABELS[training.status]}
-          </span>
+          <div className="flex min-w-0 items-center gap-2"><p className="font-medium">{formatTrainingDate(training.date)}</p><span className={`shrink-0 rounded px-2 py-0.5 text-xs ${TRAINING_TYPE_COLORS[training.type]}`}>{TRAINING_TYPE_LABELS[training.type]}</span></div>
+          <span className={`shrink-0 rounded px-2 py-0.5 text-xs ${TRAINING_STATUS_COLORS[training.status]}`}>{TRAINING_STATUS_LABELS[training.status]}</span>
         </div>
         {(time || training.location) && (
           <p className="text-sm text-gray-600">

@@ -1,5 +1,19 @@
 import type { Role } from "../api/teams";
-import type { AttendanceStatus, TrainingStatus } from "../api/trainings";
+import type { AttendanceStatus, TrainingStatus, TrainingType } from "../api/trainings";
+
+export const TRAINING_TYPE_LABELS: Record<TrainingType, string> = {
+  tactical: "Táctico",
+  technical: "Técnico",
+  physical: "Físico",
+  mixed: "Mixto",
+};
+
+export const TRAINING_TYPE_COLORS: Record<TrainingType, string> = {
+  tactical: "bg-violet-100 text-violet-800",
+  technical: "bg-blue-100 text-blue-800",
+  physical: "bg-orange-100 text-orange-800",
+  mixed: "bg-teal-100 text-teal-800",
+};
 
 export const TRAINING_STATUS_LABELS: Record<TrainingStatus, string> = {
   scheduled: "Programado",

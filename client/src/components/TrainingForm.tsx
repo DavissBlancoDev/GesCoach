@@ -5,6 +5,7 @@ import { getFieldErrors } from "../api/client";
 import { todayIso } from "../lib/trainings";
 import DateSelect from "./DateSelect";
 import FormField from "./FormField";
+import { TRAINING_TYPE_LABELS } from "../lib/trainings";
 
 interface TrainingFormProps {
   teamId: string;
@@ -30,6 +31,7 @@ function TrainingForm({ teamId, defaultLocation, training, onDone }: TrainingFor
   const [duration, setDuration] = useState(String(training?.durationMinutes ?? ""));
   const [location, setLocation] = useState(training ? (training.location ?? "") : defaultLocation);
   const [objectives, setObjectives] = useState(training?.objectives ?? "");
+  const [type, setType] = useState(training?.type ?? "mixed");
 
   const queryClient = useQueryClient();
 
@@ -54,6 +56,7 @@ function TrainingForm({ teamId, defaultLocation, training, onDone }: TrainingFor
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     mutation.mutate({
+      type,
       date,
       // Los campos opcionales vacíos no se envían. Al editar, el servidor
       // borra los que no llegan, así que así se pueden vaciar.
@@ -79,6 +82,23 @@ function TrainingForm({ teamId, defaultLocation, training, onDone }: TrainingFor
         error={firstError("date")}
         required
       />
+
+      <div>
+        <label htmlFor="trainingType" className="block text-sm font-medium text-gray-700">
+          Tipo de entreno
+        </label>
+        <select
+          id="trainingType"
+          value={type}
+          onChange={(e) => setType(e.target.value as TrainingData["type"])}
+          className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2"
+        >
+          {Object.entries(TRAINING_TYPE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+        {firstError("type") && <p className="mt-1 text-sm text-red-600">{firstError("type")}</p>}
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <FormField

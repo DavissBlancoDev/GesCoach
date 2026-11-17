@@ -3,6 +3,7 @@ import type { PlayerStatus } from "./players";
 
 // scheduled: programado · held: celebrado (ya se pasó lista) · cancelled: suspendido
 export type TrainingStatus = "scheduled" | "held" | "cancelled";
+export type TrainingType = "tactical" | "technical" | "physical" | "mixed";
 
 // Los tres botones al pasar lista: verde, naranja y rojo
 export type AttendanceStatus = "present" | "justified_absence" | "unjustified_absence";
@@ -18,6 +19,7 @@ export interface AttendanceSummary {
 // rol puede ver estadísticas.
 export interface Training {
   id: string;
+  type: TrainingType;
   date: string; // fecha a medianoche UTC, en formato ISO
   startTime?: string; // "HH:MM"
   durationMinutes?: number;
@@ -45,6 +47,7 @@ export interface TrainingDetail extends Training {
 
 // Datos que envía el formulario al crear o editar un entreno
 export interface TrainingData {
+  type: TrainingType;
   date: string; // AAAA-MM-DD
   startTime?: string;
   durationMinutes?: number;

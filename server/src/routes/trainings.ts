@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/requireAuth";
 import { requireTeamMember } from "../middleware/requireTeamMember";
 import { Season } from "../models/Season";
-import { Training } from "../models/Training";
+import { Training, TRAINING_TYPES } from "../models/Training";
 import { Attendance, ATTENDANCE_STATUSES } from "../models/Attendance";
 import { Player } from "../models/Player";
 import { PlayerSeason } from "../models/PlayerSeason";
@@ -29,6 +29,7 @@ const dateString = z
 
 // Datos de un entreno: sirven para crearlo y para actualizarlo
 const trainingSchema = z.object({
+  type: z.enum(TRAINING_TYPES).default("mixed"),
   date: dateString,
   startTime: z
     .string()
@@ -79,6 +80,7 @@ const emptySummary = (): AttendanceSummary => ({
 /** Convierte un entreno en el objeto que se envía al cliente. */
 const toTrainingItem = (t: TrainingDoc, attendance?: AttendanceSummary) => ({
   id: t.id,
+  type: t.type ?? "mixed",
   date: t.date,
   startTime: t.startTime,
   durationMinutes: t.durationMinutes,
@@ -253,6 +255,7 @@ router.put<TrainingParams>("/:trainingId", async (req, res) => {
 
   const d = parsed.data;
   training.date = d.date;
+  training.type = d.type;
   training.startTime = d.startTime || undefined;
   training.durationMinutes = d.durationMinutes;
   training.location = d.location || undefined;

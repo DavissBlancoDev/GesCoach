@@ -2,10 +2,12 @@ import { Schema, model, Types } from "mongoose";
 
 // scheduled: programado · held: celebrado (ya se pasó lista) · cancelled: suspendido
 export const TRAINING_STATUSES = ["scheduled", "held", "cancelled"] as const;
+export const TRAINING_TYPES = ["tactical", "technical", "physical", "mixed"] as const;
 
 interface ITraining {
   team: Types.ObjectId;
   season: Types.ObjectId;
+  type: (typeof TRAINING_TYPES)[number];
   date: Date;
   startTime?: string;
   durationMinutes?: number;
@@ -23,6 +25,7 @@ const trainingSchema = new Schema<ITraining>(
   {
     team: { type: Schema.Types.ObjectId, ref: "Team", required: true },
     season: { type: Schema.Types.ObjectId, ref: "Season", required: true },
+    type: { type: String, enum: TRAINING_TYPES, default: "mixed" },
     date: { type: Date, required: true },
     startTime: { type: String, match: [/^([01]\d|2[0-3]):[0-5]\d$/, "Formato esperado: HH:MM"] },
     durationMinutes: { type: Number, min: 10, max: 240 },
