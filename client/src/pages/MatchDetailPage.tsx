@@ -54,7 +54,7 @@ function MatchSummary({
     return player ? player.nickname || `${player.name} ${player.surname}` : "Jugador";
   };
   const starters = (match.lineup?.players ?? []).filter((player) => player.starter);
-  const formation = match.lineup?.formation ?? "4-4-2";
+  const formation = match.lineup?.formation ?? (match.lineup?.startersRequired === 8 ? "2-4-1" : "4-4-2");
   const playerBySlot = new Map(
     starters
       .filter((starter) => starter.slot)
@@ -65,7 +65,6 @@ function MatchSummary({
     starters.find((starter) => starter.slot === "gk");
   const jerseyOf = (playerId: string, matchJersey?: number) =>
     matchJersey ?? players?.find((player) => player.id === playerId)?.jerseyNumber;
-  const playerOf = (playerId: string) => players?.find((player) => player.id === playerId);
   const goals = (match.events ?? [])
     .filter((event) => event.type === "goal")
     .sort((a, b) => a.minute - b.minute);
@@ -99,7 +98,9 @@ function MatchSummary({
     <section className="mt-6 space-y-4" aria-label="Resumen del partido">
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold">11 inicial</h2>
+          <h2 className="text-lg font-semibold">
+            {match.lineup?.startersRequired === 8 ? "8 inicial" : "11 inicial"}
+          </h2>
           {starters.length > 0 ? (
             <div
               className="relative mt-3 overflow-hidden rounded-lg border-4 border-green-800 bg-green-600 px-3 py-4"
@@ -123,11 +124,16 @@ function MatchSummary({
                     </div>
                   )}
                 </div>
-                {FORMATIONS[formation].map((rowSlots) => (
+                {FORMATIONS[formation].map((rowSlots) => {
+                  const wideCarrileros =
+                    formation === "2-1-2-1-1" &&
+                    rowSlots.every((slot) => slot.label === "CAI" || slot.label === "CAD");
+
+                  return (
                   <div
                     key={rowSlots.map((slot) => slot.id).join("-")}
-                    className="grid items-start gap-1"
-                    style={{ gridTemplateColumns: `repeat(${rowSlots.length}, minmax(0, 1fr))` }}
+                    className={wideCarrileros ? "flex items-start justify-between" : "grid items-start gap-1"}
+                    style={wideCarrileros ? undefined : { gridTemplateColumns: `repeat(${rowSlots.length}, minmax(0, 1fr))` }}
                   >
                     {rowSlots.map((slot) => {
                       const starter = playerBySlot.get(slot.id);
@@ -148,7 +154,8 @@ function MatchSummary({
                       );
                     })}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -179,6 +186,11 @@ function MatchSummary({
                       <span className="min-w-0">
                         <span className="block truncate font-semibold">
                           {goalActor(event)}
+                          {event.assist && (
+                            <span className="font-normal text-gray-600">
+                              {` (${nameOf(event.assist)})`}
+                            </span>
+                          )}
                         </span>
                         <span className="block truncate text-xs text-gray-600">
                           {goalDescription(event)}
@@ -188,6 +200,11 @@ function MatchSummary({
                       <span className="min-w-0">
                         <span className="block truncate font-semibold">
                           {goalActor(event)}
+                          {event.assist && (
+                            <span className="font-normal text-gray-600">
+                              {` (${nameOf(event.assist)})`}
+                            </span>
+                          )}
                         </span>
                         <span className="block truncate text-xs text-gray-600">
                           {goalDescription(event)}

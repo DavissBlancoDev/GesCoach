@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FORMATION_OPTIONS,
+  F8_FORMATION_OPTIONS,
   saveLineup,
   type Formation,
   type Match,
@@ -121,6 +122,33 @@ export const FORMATIONS: Record<Formation, SlotSpec[][]> = {
     row("mid", ["MI", "MC", "MC", "MD"]),
     row("att", ["DC"]),
   ],
+  "2-4-1": [
+    row("def", ["DFC", "DFC"]),
+    row("mid", ["CAI", "MC", "MC", "CAD"]),
+    row("att", ["DC"]),
+  ],
+  "2-1-2-1-1": [
+    row("def", ["DFC", "DFC"]),
+    row("pivot", ["PIV"]),
+    row("mid", ["CAI", "CAD"]),
+    row("mp", ["MP"]),
+    row("att", ["DC"]),
+  ],
+  "2-3-2": [
+    row("def", ["DFC", "DFC"]),
+    row("mid", ["CAI", "MC", "CAD"]),
+    row("att", ["DC", "DC"]),
+  ],
+  "3-3-1": [
+    row("def", ["LI", "DFC", "LD"]),
+    row("mid", ["MI", "MC", "MD"]),
+    row("att", ["DC"]),
+  ],
+  "3-2-2": [
+    row("def", ["LI", "DFC", "LD"]),
+    row("mid", ["MC", "MC"]),
+    row("att", ["DC", "DC"]),
+  ],
 };
 
 const goalkeeperSlot: SlotSpec = {
@@ -195,12 +223,16 @@ function LineupPanel({ teamId, match, canEdit }: LineupPanelProps) {
   const queryClient = useQueryClient();
   const lineup = match.lineup;
   const required = lineup?.startersRequired ?? 11;
+  const formationOptions = required === 8 ? F8_FORMATION_OPTIONS : FORMATION_OPTIONS.filter(
+    (option) => !F8_FORMATION_OPTIONS.includes(option as (typeof F8_FORMATION_OPTIONS)[number]),
+  );
+  const defaultFormation = required === 8 ? F8_FORMATION_OPTIONS[0] : "4-4-2";
   const editable = canEdit && (match.status === "pending" || match.status === "playing");
   const [formation, setFormation] = useState<Formation>(
-    lineup?.formation ?? "4-4-2",
+    lineup?.formation ?? defaultFormation,
   );
   const [assignments, setAssignments] = useState<Record<string, string>>(() =>
-    initialAssignments(match, lineup?.formation ?? "4-4-2"),
+    initialAssignments(match, lineup?.formation ?? defaultFormation),
   );
   const [openSlot, setOpenSlot] = useState<string | null>(null);
   const [showOthers, setShowOthers] = useState(false);
@@ -433,10 +465,10 @@ function LineupPanel({ teamId, match, canEdit }: LineupPanelProps) {
     );
   }
 
-  const renderSlot = (slot: SlotSpec) => {
+  const renderSlot = (slot: SlotSpec, edge = false) => {
     const player = called.find((item) => item.id === assignments[slot.id]);
     return (
-      <div key={slot.id} className="flex w-full justify-center">
+      <div key={slot.id} className={`flex justify-center ${edge ? "w-auto" : "w-full"}`}>
         <button
           type="button"
           disabled={!editable}
@@ -509,7 +541,7 @@ function LineupPanel({ teamId, match, canEdit }: LineupPanelProps) {
             }
             className="rounded border border-gray-300 bg-white px-2 py-1 text-sm"
           >
-            {FORMATION_OPTIONS.map((option) => (
+            {formationOptions.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
@@ -565,14 +597,22 @@ function LineupPanel({ teamId, match, canEdit }: LineupPanelProps) {
               {renderSlot(goalkeeperSlot)}
             </div>
             <div className="ml-24 flex h-full min-w-0 flex-1 items-stretch justify-between gap-4">
-              {FORMATIONS[formation].map((rowSlots, index) => (
-                <div
-                  key={index}
-                  className="flex min-w-0 flex-1 flex-col items-center justify-evenly gap-1"
-                >
-                  {rowSlots.map(renderSlot)}
-                </div>
-              ))}
+              {FORMATIONS[formation].map((rowSlots, index) => {
+                const wideCarrileros =
+                  formation === "2-1-2-1-1" &&
+                  rowSlots.every((slot) => slot.label === "CAI" || slot.label === "CAD");
+
+                return (
+                  <div
+                    key={index}
+                    className={`flex min-w-0 flex-1 flex-col items-center gap-1 ${wideCarrileros ? "justify-between py-8" : "justify-evenly"}`}
+                  >
+                    <div className="contents">
+                      {rowSlots.map(renderSlot)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

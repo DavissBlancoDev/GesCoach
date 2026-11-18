@@ -12,6 +12,7 @@ import {
   MATCH_EVENT_TYPES,
   MATCH_EVENT_SIDES,
   FORMATION_OPTIONS,
+  F8_FORMATION_OPTIONS,
   type MatchStatus,
 } from "../models/Match";
 import { Opponent } from "../models/Opponent";
@@ -648,6 +649,18 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
   }
 
   const required = startersRequired(season.modality);
+  if (
+    parsed.data.formation &&
+    (season.modality === "f8"
+      ? !F8_FORMATION_OPTIONS.includes(parsed.data.formation as (typeof F8_FORMATION_OPTIONS)[number])
+      : F8_FORMATION_OPTIONS.includes(parsed.data.formation as (typeof F8_FORMATION_OPTIONS)[number]))
+  ) {
+    return res.status(400).json({
+      error: season.modality === "f8"
+        ? "El sistema no es válido para fútbol 8"
+        : "El sistema de fútbol 8 no es válido para esta modalidad",
+    });
+  }
   const starters = sent.filter((p) => p.starter);
   if (starters.length > required) {
     return res.status(400).json({ error: `No puede haber más de ${required} titulares` });

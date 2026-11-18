@@ -6,7 +6,9 @@ export const MATCH_COMPETITIONS = ["league", "cup", "tournament", "friendly"] as
 export const MATCH_VENUES = ["home", "away", "neutral"] as const;
 // pending: pendiente · playing: jugando · finished: finalizado
 export const MATCH_STATUSES = ["pending", "playing", "finished"] as const;
-export const FORMATION_OPTIONS = ["4-4-2", "4-3-3", "4-2-3-1", "4-1-4-1", "3-4-3", "3-5-2", "5-2-3", "5-3-2", "5-4-1"] as const;
+export const F8_FORMATION_OPTIONS = ["2-4-1", "2-1-2-1-1", "2-3-2", "3-3-1", "3-2-2"] as const;
+export const CLASSIC_FORMATION_OPTIONS = ["4-4-2", "4-3-3", "4-2-3-1", "4-1-4-1", "3-4-3", "3-5-2", "5-2-3", "5-3-2", "5-4-1"] as const;
+export const FORMATION_OPTIONS = [...CLASSIC_FORMATION_OPTIONS, ...F8_FORMATION_OPTIONS] as const;
 export type Formation = (typeof FORMATION_OPTIONS)[number];
 
 export type MatchCompetition = (typeof MATCH_COMPETITIONS)[number];

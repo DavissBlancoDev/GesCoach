@@ -261,6 +261,13 @@ function MatchEventsPanel({ teamId, match, canEdit }: MatchEventsPanelProps) {
                     <span className="min-w-0" title={event.type === "goal" ? goalDescription(event) : eventDescriptionOf(event)}>
                       <span className="block truncate font-semibold">
                         {playerLabelOf(event)}
+                        {event.type === "goal" &&
+                          event.side === "for" &&
+                          event.assist && (
+                            <span className="font-normal text-gray-600">
+                              {` (${nameOf(event.assist)})`}
+                            </span>
+                          )}
                       </span>
                       <span className="block truncate text-xs font-normal text-gray-600">
                         {eventDescriptionOf(event)}
