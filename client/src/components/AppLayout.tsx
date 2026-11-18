@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useCurrentTeam } from "../hooks/useCurrentTeam";
 import UserMenu from "./UserMenu";
+import SiteFooter from "./SiteFooter";
 
 // Estilo de cada enlace según esté activo o no
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -68,6 +69,7 @@ function AppLayout() {
         </div>
       </header>
       <Outlet />
+      <SiteFooter />
     </>
   );
 }

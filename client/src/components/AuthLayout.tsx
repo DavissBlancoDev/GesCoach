@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import SiteFooter from "./SiteFooter";
 
 interface AuthLayoutProps {
   eyebrow: string;
@@ -16,7 +17,7 @@ function AuthLayout({
   footer,
 }: AuthLayoutProps) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f3f7f4] p-4 sm:p-8">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-[#f3f7f4] p-4 sm:p-8">
       <div className="grid w-full max-w-5xl overflow-hidden rounded-4xl bg-white shadow-[0_24px_80px_rgba(10,45,27,0.14)] lg:min-h-170 lg:grid-cols-[0.9fr_1.1fr]">
         <aside className="relative hidden overflow-hidden bg-[#07130e] p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-green-500/20 blur-3xl" />
@@ -75,6 +76,9 @@ function AuthLayout({
             <div className="mt-7 border-t border-slate-100 pt-5">{footer}</div>
           </div>
         </section>
+      </div>
+      <div className="mt-6 w-full max-w-5xl">
+        <SiteFooter />
       </div>
     </main>
   );

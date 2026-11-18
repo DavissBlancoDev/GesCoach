@@ -1,5 +1,6 @@
 import { Link, Navigate } from "react-router-dom";
 import { useSession } from "../hooks/useSession";
+import SiteFooter from "../components/SiteFooter";
 
 const features = [
   {
@@ -134,6 +135,7 @@ function LandingPage() {
         <div><p className="text-2xl font-semibold tracking-tight">Tu próxima temporada empieza aquí.</p><p className="mt-1 text-sm text-[#718078]">Organiza el trabajo. Potencia al equipo.</p></div>
         <Link to="/registro" className="rounded-full border border-[#173b2b] px-6 py-3 text-sm font-bold text-[#173b2b] transition hover:bg-[#173b2b] hover:text-white">Crear mi equipo <span className="ml-2">→</span></Link>
       </section>
+      <SiteFooter />
     </main>
   );
 }
