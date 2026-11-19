@@ -11,6 +11,13 @@ export type MatchEventType =
   | "red_card"
   | "substitution";
 export type MatchEventSide = "for" | "against";
+export const F7_FORMATION_OPTIONS = [
+  "2-3-1",
+  "2-2-2",
+  "3-2-1",
+  "3-3-0",
+  "3-1-2",
+] as const;
 export const F8_FORMATION_OPTIONS = [
   "2-4-1",
   "2-1-2-1-1",
@@ -29,6 +36,7 @@ export const FORMATION_OPTIONS = [
   "5-3-2",
   "5-4-1",
   ...F8_FORMATION_OPTIONS,
+  ...F7_FORMATION_OPTIONS,
 ] as const;
 export type Formation = (typeof FORMATION_OPTIONS)[number];
 

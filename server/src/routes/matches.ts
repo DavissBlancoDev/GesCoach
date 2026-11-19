@@ -12,6 +12,7 @@ import {
   MATCH_EVENT_TYPES,
   MATCH_EVENT_SIDES,
   FORMATION_OPTIONS,
+  F7_FORMATION_OPTIONS,
   F8_FORMATION_OPTIONS,
   type MatchStatus,
 } from "../models/Match";
@@ -51,7 +52,9 @@ const dateString = z
   .transform((v) => new Date(v))
   .refine((d) => !Number.isNaN(d.getTime()), "Fecha no válida");
 
-const objectId = z.string().refine((v) => mongoose.isValidObjectId(v), "Identificador no válido");
+const objectId = z
+  .string()
+  .refine((v) => mongoose.isValidObjectId(v), "Identificador no válido");
 
 // Datos de un partido: sirven para programarlo y para editarlo
 const matchSchema = z.object({
@@ -96,16 +99,19 @@ const lineupSchema = z
           starter: z.boolean(),
           jerseyNumber: z.number().int().min(0).max(99).optional(),
           slot: z.string().trim().max(40).optional(),
-        })
+        }),
       )
       .max(40),
     goalkeeper: objectId.nullable().optional(),
     formation: z.enum(FORMATION_OPTIONS).optional(),
   })
-  .refine((b) => new Set(b.players.map((p) => p.player)).size === b.players.length, {
-    message: "Hay jugadores repetidos",
-    path: ["players"],
-  });
+  .refine(
+    (b) => new Set(b.players.map((p) => p.player)).size === b.players.length,
+    {
+      message: "Hay jugadores repetidos",
+      path: ["players"],
+    },
+  );
 
 const eventSchema = z
   .object({
@@ -122,22 +128,57 @@ const eventSchema = z
   })
   .superRefine((event, ctx) => {
     if (event.type === "goal" && !event.side) {
-      ctx.addIssue({ code: "custom", path: ["side"], message: "Indica de qué equipo es el gol" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["side"],
+        message: "Indica de qué equipo es el gol",
+      });
     }
-    if ((event.type === "yellow_card" || event.type === "red_card") && !event.player) {
-      ctx.addIssue({ code: "custom", path: ["player"], message: "Indica el jugador" });
+    if (
+      (event.type === "yellow_card" || event.type === "red_card") &&
+      !event.player
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["player"],
+        message: "Indica el jugador",
+      });
     }
-    if (event.type === "substitution" && (!event.playerIn || !event.playerOut)) {
-      ctx.addIssue({ code: "custom", path: ["playerIn"], message: "Indica quién entra y quién sale" });
+    if (
+      event.type === "substitution" &&
+      (!event.playerIn || !event.playerOut)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["playerIn"],
+        message: "Indica quién entra y quién sale",
+      });
     }
-    if (event.type !== "goal" && (event.side || event.assist || event.penalty || event.ownGoal)) {
-      ctx.addIssue({ code: "custom", message: "Esos datos solo se aplican a los goles" });
+    if (
+      event.type !== "goal" &&
+      (event.side || event.assist || event.penalty || event.ownGoal)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Esos datos solo se aplican a los goles",
+      });
     }
     if (event.type !== "goal" && event.opponentJerseyNumber !== undefined) {
-      ctx.addIssue({ code: "custom", message: "El dorsal rival solo se aplica a los goles" });
+      ctx.addIssue({
+        code: "custom",
+        message: "El dorsal rival solo se aplica a los goles",
+      });
     }
-    if (event.type === "goal" && event.side !== "against" && event.opponentJerseyNumber !== undefined) {
-      ctx.addIssue({ code: "custom", path: ["opponentJerseyNumber"], message: "El dorsal rival solo se aplica a goles rivales" });
+    if (
+      event.type === "goal" &&
+      event.side !== "against" &&
+      event.opponentJerseyNumber !== undefined
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["opponentJerseyNumber"],
+        message: "El dorsal rival solo se aplica a goles rivales",
+      });
     }
   });
 
@@ -182,7 +223,7 @@ function toMatchItem(
   opponent: { id: string; name: string },
   role: Role,
   season: SeasonInfo,
-  squad: Map<string, SquadInfo>
+  squad: Map<string, SquadInfo>,
 ) {
   const required = startersRequired(season.modality);
   const canSee = canSeeCallup(role);
@@ -245,7 +286,7 @@ async function findOrCreateOpponent(teamId: string, name: string) {
   const opponent = await Opponent.findOneAndUpdate(
     { team: teamId, normalizedName: normalizeName(name) },
     { $setOnInsert: { name } },
-    { upsert: true, new: true }
+    { upsert: true, new: true },
   );
   if (!opponent) throw new Error("No se pudo guardar el rival");
   return opponent;
@@ -269,28 +310,43 @@ async function loadSquad(seasonId: mongoose.Types.ObjectId) {
 router.get<TeamParams>("/", async (req, res) => {
   const role = res.locals.role as Role;
 
-  const season = await Season.findOne({ team: req.params.teamId, isCurrent: true });
+  const season = await Season.findOne({
+    team: req.params.teamId,
+    isCurrent: true,
+  });
   if (!season) {
-    return res.status(404).json({ error: "El equipo no tiene temporada activa" });
+    return res
+      .status(404)
+      .json({ error: "El equipo no tiene temporada activa" });
   }
 
-  const matches = await Match.find({ season: season._id }).sort({ date: 1, time: 1 });
+  const matches = await Match.find({ season: season._id }).sort({
+    date: 1,
+    time: 1,
+  });
 
   // Los nombres de los rivales y los dorsales de la plantilla, cada uno en una sola consulta
-  const opponents = await Opponent.find({ _id: { $in: matches.map((m) => m.opponent) } });
-  const nameById = new Map<string, string>(opponents.map((o) => [o.id, o.name]));
+  const opponents = await Opponent.find({
+    _id: { $in: matches.map((m) => m.opponent) },
+  });
+  const nameById = new Map<string, string>(
+    opponents.map((o) => [o.id, o.name]),
+  );
   const squad = await loadSquad(season._id);
 
   return res.json(
     matches.map((m) =>
       toMatchItem(
         m,
-        { id: m.opponent.toString(), name: nameById.get(m.opponent.toString()) ?? "Rival" },
+        {
+          id: m.opponent.toString(),
+          name: nameById.get(m.opponent.toString()) ?? "Rival",
+        },
         role,
         season,
-        squad
-      )
-    )
+        squad,
+      ),
+    ),
   );
 });
 
@@ -300,7 +356,9 @@ router.get<TeamParams>("/", async (req, res) => {
  * Va antes de "/:matchId", para que no se confunda con un identificador.
  */
 router.get<TeamParams>("/opponents", async (req, res) => {
-  const opponents = await Opponent.find({ team: req.params.teamId }).sort({ name: 1 });
+  const opponents = await Opponent.find({ team: req.params.teamId }).sort({
+    name: 1,
+  });
   return res.json(opponents.map((o) => ({ id: o.id, name: o.name })));
 });
 
@@ -312,7 +370,9 @@ router.get<TeamParams>("/opponents", async (req, res) => {
 router.post<TeamParams>("/", async (req, res) => {
   const role = res.locals.role as Role;
   if (!canManageMatches(role)) {
-    return res.status(403).json({ error: "No tienes permiso para programar partidos" });
+    return res
+      .status(403)
+      .json({ error: "No tienes permiso para programar partidos" });
   }
 
   const parsed = matchSchema.safeParse(req.body);
@@ -323,9 +383,14 @@ router.post<TeamParams>("/", async (req, res) => {
     });
   }
 
-  const season = await Season.findOne({ team: req.params.teamId, isCurrent: true });
+  const season = await Season.findOne({
+    team: req.params.teamId,
+    isCurrent: true,
+  });
   if (!season) {
-    return res.status(404).json({ error: "El equipo no tiene temporada activa" });
+    return res
+      .status(404)
+      .json({ error: "El equipo no tiene temporada activa" });
   }
 
   const { opponentName, ...data } = parsed.data;
@@ -341,7 +406,15 @@ router.post<TeamParams>("/", async (req, res) => {
 
   return res
     .status(201)
-    .json(toMatchItem(match, { id: opponent.id, name: opponent.name }, role, season, new Map()));
+    .json(
+      toMatchItem(
+        match,
+        { id: opponent.id, name: opponent.name },
+        role,
+        season,
+        new Map(),
+      ),
+    );
 });
 
 /**
@@ -369,8 +442,8 @@ router.get<MatchParams>("/:matchId", async (req, res) => {
       { id: match.opponent.toString(), name: opponent?.name ?? "Rival" },
       role,
       season,
-      squad
-    )
+      squad,
+    ),
   );
 });
 
@@ -383,7 +456,9 @@ router.get<MatchParams>("/:matchId", async (req, res) => {
 router.put<MatchParams>("/:matchId", async (req, res) => {
   const role = res.locals.role as Role;
   if (!canManageMatches(role)) {
-    return res.status(403).json({ error: "No tienes permiso para editar partidos" });
+    return res
+      .status(403)
+      .json({ error: "No tienes permiso para editar partidos" });
   }
 
   const parsed = matchSchema.safeParse(req.body);
@@ -405,14 +480,18 @@ router.put<MatchParams>("/:matchId", async (req, res) => {
   }
 
   const d = parsed.data;
-  const opponent = await findOrCreateOpponent(req.params.teamId, d.opponentName);
+  const opponent = await findOrCreateOpponent(
+    req.params.teamId,
+    d.opponentName,
+  );
 
   match.opponent = opponent._id;
   match.competition = d.competition;
   match.venue = d.venue;
   match.date = d.date;
   match.time = d.time || undefined;
-  if (d.durationMinutes !== undefined) match.durationMinutes = d.durationMinutes;
+  if (d.durationMinutes !== undefined)
+    match.durationMinutes = d.durationMinutes;
   match.city = d.city || undefined;
   match.fieldName = d.fieldName || undefined;
   match.observations = d.observations || undefined;
@@ -420,7 +499,13 @@ router.put<MatchParams>("/:matchId", async (req, res) => {
 
   const squad = await loadSquad(season._id);
   return res.json(
-    toMatchItem(match, { id: opponent.id, name: opponent.name }, role, season, squad)
+    toMatchItem(
+      match,
+      { id: opponent.id, name: opponent.name },
+      role,
+      season,
+      squad,
+    ),
   );
 });
 
@@ -436,7 +521,9 @@ router.put<MatchParams>("/:matchId", async (req, res) => {
 router.patch<MatchParams>("/:matchId/status", async (req, res) => {
   const role = res.locals.role as Role;
   if (!canRecordMatch(role)) {
-    return res.status(403).json({ error: "No tienes permiso para cambiar el estado del partido" });
+    return res
+      .status(403)
+      .json({ error: "No tienes permiso para cambiar el estado del partido" });
   }
 
   const parsed = statusSchema.safeParse(req.body);
@@ -451,7 +538,9 @@ router.patch<MatchParams>("/:matchId/status", async (req, res) => {
 
   const next = parsed.data.status;
   if (!NEXT_STATUSES[match.status].includes(next)) {
-    return res.status(409).json({ error: "No se puede hacer ese cambio de estado" });
+    return res
+      .status(409)
+      .json({ error: "No se puede hacer ese cambio de estado" });
   }
 
   // Empezar el partido exige la alineación completa. Reabrir uno finalizado, no.
@@ -461,7 +550,11 @@ router.patch<MatchParams>("/:matchId/status", async (req, res) => {
       return res.status(404).json({ error: "Temporada no encontrada" });
     }
     const squad = await loadSquad(season._id);
-    const problems = lineupProblems(match, squad, startersRequired(season.modality));
+    const problems = lineupProblems(
+      match,
+      squad,
+      startersRequired(season.modality),
+    );
     if (problems.length > 0) {
       return res.status(409).json({
         error: "Falta completar la alineación para empezar el partido",
@@ -504,7 +597,9 @@ router.patch<MatchParams>("/:matchId/status", async (req, res) => {
 router.patch<MatchParams>("/:matchId/score", async (req, res) => {
   const role = res.locals.role as Role;
   if (!canRecordMatch(role)) {
-    return res.status(403).json({ error: "No tienes permiso para cambiar el resultado" });
+    return res
+      .status(403)
+      .json({ error: "No tienes permiso para cambiar el resultado" });
   }
 
   const parsed = scoreSchema.safeParse(req.body);
@@ -517,14 +612,20 @@ router.patch<MatchParams>("/:matchId/score", async (req, res) => {
     return res.status(404).json({ error: "Partido no encontrado" });
   }
   if (match.status !== "playing") {
-    return res.status(409).json({ error: "El resultado solo se puede cambiar mientras se juega" });
+    return res
+      .status(409)
+      .json({ error: "El resultado solo se puede cambiar mientras se juega" });
   }
 
   match.goalsFor = parsed.data.goalsFor;
   match.goalsAgainst = parsed.data.goalsAgainst;
   await match.save();
 
-  return res.json({ id: match.id, goalsFor: match.goalsFor, goalsAgainst: match.goalsAgainst });
+  return res.json({
+    id: match.id,
+    goalsFor: match.goalsFor,
+    goalsAgainst: match.goalsAgainst,
+  });
 });
 
 /**
@@ -542,7 +643,11 @@ router.patch<MatchParams>("/:matchId/score", async (req, res) => {
 router.put<MatchParams>("/:matchId/callup", async (req, res) => {
   const role = res.locals.role as Role;
   if (!canEditCallup(role)) {
-    return res.status(403).json({ error: "Solo el entrenador principal puede hacer la convocatoria" });
+    return res
+      .status(403)
+      .json({
+        error: "Solo el entrenador principal puede hacer la convocatoria",
+      });
   }
 
   const parsed = callupSchema.safeParse(req.body);
@@ -558,39 +663,56 @@ router.put<MatchParams>("/:matchId/callup", async (req, res) => {
     return res.status(404).json({ error: "Partido no encontrado" });
   }
   if (match.status !== "pending") {
-    return res.status(409).json({ error: "La convocatoria solo se puede cambiar con el partido pendiente" });
+    return res
+      .status(409)
+      .json({
+        error: "La convocatoria solo se puede cambiar con el partido pendiente",
+      });
   }
 
   const ids = parsed.data.players;
 
   const max = MAX_CALLUP[match.competition];
   if (max !== null && ids.length > max) {
-    return res.status(400).json({ error: `El máximo en esta competición es de ${max} convocados` });
+    return res
+      .status(400)
+      .json({ error: `El máximo en esta competición es de ${max} convocados` });
   }
 
   const squad = await PlayerSeason.find({ season: match.season });
-  const squadById = new Map(squad.map((entry) => [entry.player.toString(), entry]));
+  const squadById = new Map(
+    squad.map((entry) => [entry.player.toString(), entry]),
+  );
   const previous = new Map(match.callup.map((c) => [c.player.toString(), c]));
 
   for (const id of ids) {
     const entry = squadById.get(id);
     if (!entry) {
-      return res.status(400).json({ error: "Hay jugadores que no son de la plantilla" });
+      return res
+        .status(400)
+        .json({ error: "Hay jugadores que no son de la plantilla" });
     }
     if (!previous.has(id) && entry.status !== "available") {
-      return res.status(400).json({ error: "Solo se pueden convocar jugadores disponibles" });
+      return res
+        .status(400)
+        .json({ error: "Solo se pueden convocar jugadores disponibles" });
     }
   }
 
   // Titulares que se quedan fuera de la convocatoria
   const removedStarters = match.callup.filter(
-    (c) => c.starter && !ids.includes(c.player.toString())
+    (c) => c.starter && !ids.includes(c.player.toString()),
   ).length;
 
   match.callup = ids.map((id) => {
     const prev = previous.get(id);
     return prev
-      ? { player: prev.player, jerseyNumber: prev.jerseyNumber, starter: prev.starter, slot: prev.slot }
+      ? {
+          player: prev.player,
+          jerseyNumber: prev.jerseyNumber,
+          starter: prev.starter,
+          slot: prev.slot,
+        }
       : { player: new mongoose.Types.ObjectId(id), starter: false };
   });
   if (match.goalkeeper && !ids.includes(match.goalkeeper.toString())) {
@@ -618,7 +740,11 @@ router.put<MatchParams>("/:matchId/callup", async (req, res) => {
 router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
   const role = res.locals.role as Role;
   if (!canEditLineup(role)) {
-    return res.status(403).json({ error: "Solo el entrenador principal puede hacer la alineación" });
+    return res
+      .status(403)
+      .json({
+        error: "Solo el entrenador principal puede hacer la alineación",
+      });
   }
 
   const parsed = lineupSchema.safeParse(req.body);
@@ -634,7 +760,12 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
     return res.status(404).json({ error: "Partido no encontrado" });
   }
   if (match.status !== "pending" && match.status !== "playing") {
-    return res.status(409).json({ error: "La alineación solo se puede cambiar con el partido pendiente o jugando" });
+    return res
+      .status(409)
+      .json({
+        error:
+          "La alineación solo se puede cambiar con el partido pendiente o jugando",
+      });
   }
 
   const season = await Season.findById(match.season);
@@ -644,31 +775,53 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
 
   const sent = parsed.data.players;
   const calledUp = new Set(match.callup.map((c) => c.player.toString()));
-  if (sent.length !== calledUp.size || sent.some((p) => !calledUp.has(p.player))) {
-    return res.status(400).json({ error: "La alineación debe incluir exactamente a los convocados" });
+  if (
+    sent.length !== calledUp.size ||
+    sent.some((p) => !calledUp.has(p.player))
+  ) {
+    return res
+      .status(400)
+      .json({
+        error: "La alineación debe incluir exactamente a los convocados",
+      });
   }
 
   const required = startersRequired(season.modality);
-  if (
-    parsed.data.formation &&
-    (season.modality === "f8"
-      ? !F8_FORMATION_OPTIONS.includes(parsed.data.formation as (typeof F8_FORMATION_OPTIONS)[number])
-      : F8_FORMATION_OPTIONS.includes(parsed.data.formation as (typeof F8_FORMATION_OPTIONS)[number]))
-  ) {
+  const validFormation =
+    season.modality === "f7"
+      ? F7_FORMATION_OPTIONS.includes(
+          parsed.data.formation as (typeof F7_FORMATION_OPTIONS)[number],
+        )
+      : season.modality === "f8"
+        ? F8_FORMATION_OPTIONS.includes(
+            parsed.data.formation as (typeof F8_FORMATION_OPTIONS)[number],
+          )
+        : !F7_FORMATION_OPTIONS.includes(
+            parsed.data.formation as (typeof F7_FORMATION_OPTIONS)[number],
+          ) &&
+          !F8_FORMATION_OPTIONS.includes(
+            parsed.data.formation as (typeof F8_FORMATION_OPTIONS)[number],
+          );
+  if (parsed.data.formation && !validFormation) {
     return res.status(400).json({
-      error: season.modality === "f8"
-        ? "El sistema no es válido para fútbol 8"
-        : "El sistema de fútbol 8 no es válido para esta modalidad",
+      error:
+        season.modality === "f8"
+          ? "El sistema no es válido para fútbol 8"
+          : "El sistema de fútbol 8 no es válido para esta modalidad",
     });
   }
   const starters = sent.filter((p) => p.starter);
   if (starters.length > required) {
-    return res.status(400).json({ error: `No puede haber más de ${required} titulares` });
+    return res
+      .status(400)
+      .json({ error: `No puede haber más de ${required} titulares` });
   }
 
   const goalkeeper = parsed.data.goalkeeper ?? undefined;
   if (goalkeeper && !starters.some((p) => p.player === goalkeeper)) {
-    return res.status(400).json({ error: "El portero debe ser uno de los titulares" });
+    return res
+      .status(400)
+      .json({ error: "El portero debe ser uno de los titulares" });
   }
 
   const entries = sent.map((p) => ({
@@ -687,7 +840,9 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
   }
 
   match.callup = entries;
-  match.goalkeeper = goalkeeper ? new mongoose.Types.ObjectId(goalkeeper) : undefined;
+  match.goalkeeper = goalkeeper
+    ? new mongoose.Types.ObjectId(goalkeeper)
+    : undefined;
   match.formation = parsed.data.formation;
   await match.save();
 
@@ -698,8 +853,8 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
       { id: match.opponent.toString(), name: opponent?.name ?? "Rival" },
       role,
       season,
-      squad
-    )
+      squad,
+    ),
   );
 });
 
@@ -707,44 +862,79 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
 router.post<MatchParams>("/:matchId/events", async (req, res) => {
   const role = res.locals.role as Role;
   if (!canRecordMatch(role)) {
-    return res.status(403).json({ error: "No tienes permiso para registrar eventos" });
+    return res
+      .status(403)
+      .json({ error: "No tienes permiso para registrar eventos" });
   }
 
   const parsed = eventSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: "Datos no válidos", details: parsed.error.flatten().fieldErrors });
+    return res
+      .status(400)
+      .json({
+        error: "Datos no válidos",
+        details: parsed.error.flatten().fieldErrors,
+      });
   }
 
   const match = await findMatch(req.params.teamId, req.params.matchId);
   if (!match) return res.status(404).json({ error: "Partido no encontrado" });
   if (match.status !== "playing") {
-    return res.status(409).json({ error: "Los eventos solo se pueden registrar mientras se juega" });
+    return res
+      .status(409)
+      .json({
+        error: "Los eventos solo se pueden registrar mientras se juega",
+      });
   }
 
   const event = parsed.data;
-  const calledUp = new Set(match.callup.map((entry) => entry.player.toString()));
-  const involved = [event.player, event.assist, event.playerIn, event.playerOut].filter(Boolean) as string[];
+  const calledUp = new Set(
+    match.callup.map((entry) => entry.player.toString()),
+  );
+  const involved = [
+    event.player,
+    event.assist,
+    event.playerIn,
+    event.playerOut,
+  ].filter(Boolean) as string[];
   if (involved.some((id) => !calledUp.has(id))) {
-    return res.status(400).json({ error: "El jugador debe pertenecer a la convocatoria" });
+    return res
+      .status(400)
+      .json({ error: "El jugador debe pertenecer a la convocatoria" });
   }
   if (event.assist && event.assist === event.player) {
-    return res.status(400).json({ error: "El goleador y el asistente deben ser distintos" });
+    return res
+      .status(400)
+      .json({ error: "El goleador y el asistente deben ser distintos" });
   }
   if (event.playerIn && event.playerIn === event.playerOut) {
-    return res.status(400).json({ error: "El jugador que entra y el que sale deben ser distintos" });
+    return res
+      .status(400)
+      .json({
+        error: "El jugador que entra y el que sale deben ser distintos",
+      });
   }
 
   match.events.push({
     ...event,
-    player: event.player ? new mongoose.Types.ObjectId(event.player) : undefined,
-    assist: event.assist ? new mongoose.Types.ObjectId(event.assist) : undefined,
-    playerIn: event.playerIn ? new mongoose.Types.ObjectId(event.playerIn) : undefined,
-    playerOut: event.playerOut ? new mongoose.Types.ObjectId(event.playerOut) : undefined,
+    player: event.player
+      ? new mongoose.Types.ObjectId(event.player)
+      : undefined,
+    assist: event.assist
+      ? new mongoose.Types.ObjectId(event.assist)
+      : undefined,
+    playerIn: event.playerIn
+      ? new mongoose.Types.ObjectId(event.playerIn)
+      : undefined,
+    playerOut: event.playerOut
+      ? new mongoose.Types.ObjectId(event.playerOut)
+      : undefined,
     opponentJerseyNumber: event.opponentJerseyNumber,
   });
   if (event.type === "goal") {
     if (event.side === "for") match.goalsFor = (match.goalsFor ?? 0) + 1;
-    if (event.side === "against") match.goalsAgainst = (match.goalsAgainst ?? 0) + 1;
+    if (event.side === "against")
+      match.goalsAgainst = (match.goalsAgainst ?? 0) + 1;
   }
   await match.save();
   const savedEvent = match.events[match.events.length - 1];
@@ -752,23 +942,36 @@ router.post<MatchParams>("/:matchId/events", async (req, res) => {
 });
 
 /** Elimina un evento y ajusta el marcador si era un gol. */
-router.delete<MatchParams & { eventId: string }>("/:matchId/events/:eventId", async (req, res) => {
-  const role = res.locals.role as Role;
-  if (!canRecordMatch(role)) return res.status(403).json({ error: "No tienes permiso para editar eventos" });
-  const match = await findMatch(req.params.teamId, req.params.matchId);
-  if (!match) return res.status(404).json({ error: "Partido no encontrado" });
-  if (match.status !== "playing") return res.status(409).json({ error: "Solo se pueden editar eventos mientras se juega" });
+router.delete<MatchParams & { eventId: string }>(
+  "/:matchId/events/:eventId",
+  async (req, res) => {
+    const role = res.locals.role as Role;
+    if (!canRecordMatch(role))
+      return res
+        .status(403)
+        .json({ error: "No tienes permiso para editar eventos" });
+    const match = await findMatch(req.params.teamId, req.params.matchId);
+    if (!match) return res.status(404).json({ error: "Partido no encontrado" });
+    if (match.status !== "playing")
+      return res
+        .status(409)
+        .json({ error: "Solo se pueden editar eventos mientras se juega" });
 
-  const event = match.events.find((item) => item._id?.toString() === req.params.eventId);
-  if (!event) return res.status(404).json({ error: "Evento no encontrado" });
-  if (event.type === "goal") {
-    if (event.side === "for") match.goalsFor = Math.max(0, (match.goalsFor ?? 0) - 1);
-    if (event.side === "against") match.goalsAgainst = Math.max(0, (match.goalsAgainst ?? 0) - 1);
-  }
-  match.events.splice(match.events.indexOf(event), 1);
-  await match.save();
-  return res.status(204).send();
-});
+    const event = match.events.find(
+      (item) => item._id?.toString() === req.params.eventId,
+    );
+    if (!event) return res.status(404).json({ error: "Evento no encontrado" });
+    if (event.type === "goal") {
+      if (event.side === "for")
+        match.goalsFor = Math.max(0, (match.goalsFor ?? 0) - 1);
+      if (event.side === "against")
+        match.goalsAgainst = Math.max(0, (match.goalsAgainst ?? 0) - 1);
+    }
+    match.events.splice(match.events.indexOf(event), 1);
+    await match.save();
+    return res.status(204).send();
+  },
+);
 
 /**
  * DELETE /api/teams/:teamId/matches/:matchId
@@ -777,7 +980,9 @@ router.delete<MatchParams & { eventId: string }>("/:matchId/events/:eventId", as
 router.delete<MatchParams>("/:matchId", async (req, res) => {
   const role = res.locals.role as Role;
   if (!canManageMatches(role)) {
-    return res.status(403).json({ error: "No tienes permiso para borrar partidos" });
+    return res
+      .status(403)
+      .json({ error: "No tienes permiso para borrar partidos" });
   }
 
   const match = await findMatch(req.params.teamId, req.params.matchId);

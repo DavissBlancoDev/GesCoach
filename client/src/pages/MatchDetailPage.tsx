@@ -51,10 +51,20 @@ function MatchSummary({
 }) {
   const nameOf = (id?: string) => {
     const player = players?.find((item) => item.id === id);
-    return player ? player.nickname || `${player.name} ${player.surname}` : "Jugador";
+    return player
+      ? player.nickname || `${player.name} ${player.surname}`
+      : "Jugador";
   };
-  const starters = (match.lineup?.players ?? []).filter((player) => player.starter);
-  const formation = match.lineup?.formation ?? (match.lineup?.startersRequired === 8 ? "2-4-1" : "4-4-2");
+  const starters = (match.lineup?.players ?? []).filter(
+    (player) => player.starter,
+  );
+  const formation =
+    match.lineup?.formation ??
+    (match.lineup?.startersRequired === 7
+      ? "2-3-1"
+      : match.lineup?.startersRequired === 8
+        ? "2-4-1"
+        : "4-4-2");
   const playerBySlot = new Map(
     starters
       .filter((starter) => starter.slot)
@@ -64,7 +74,8 @@ function MatchSummary({
     starters.find((starter) => starter.player === match.lineup?.goalkeeper) ??
     starters.find((starter) => starter.slot === "gk");
   const jerseyOf = (playerId: string, matchJersey?: number) =>
-    matchJersey ?? players?.find((player) => player.id === playerId)?.jerseyNumber;
+    matchJersey ??
+    players?.find((player) => player.id === playerId)?.jerseyNumber;
   const goals = (match.events ?? [])
     .filter((event) => event.type === "goal")
     .sort((a, b) => a.minute - b.minute);
@@ -110,63 +121,94 @@ function MatchSummary({
               <div className="pointer-events-none absolute -bottom-14 left-1/2 h-28 w-28 -translate-x-1/2 rounded-full border-2 border-white/70" />
               <div className="pointer-events-none absolute inset-x-[14%] top-0 h-28 border-x-2 border-b-2 border-white/60" />
               <div className="pointer-events-none absolute inset-x-[30%] top-0 h-12 border-x-2 border-b-2 border-white/60" />
-              <div className="relative z-10 flex min-h-[22rem] flex-col justify-between gap-5 py-2 pb-5">
+              <div className="relative z-10 flex min-h-88 flex-col justify-between gap-5 py-2 pb-5">
                 <div className="flex justify-center">
                   {goalkeeper && (
                     <div
-                      className="flex min-w-0 max-w-[5rem] flex-col items-center text-center text-xs text-white"
+                      className="flex min-w-0 max-w-20 flex-col items-center text-center text-xs text-white"
                       title={nameOf(goalkeeper.player)}
                     >
-                      <span className={`flex h-9 w-9 items-center justify-center rounded-full border-2 border-white font-bold shadow ${GROUP_COLORS.portero}`}>
-                        {jerseyOf(goalkeeper.player, goalkeeper.jerseyNumber) ?? "—"}
+                      <span
+                        className={`flex h-9 w-9 items-center justify-center rounded-full border-2 border-white font-bold shadow ${GROUP_COLORS.portero}`}
+                      >
+                        {jerseyOf(goalkeeper.player, goalkeeper.jerseyNumber) ??
+                          "—"}
                       </span>
-                      <span className="mt-1 truncate font-bold">{nameOf(goalkeeper.player)}</span>
+                      <span className="mt-1 truncate font-bold">
+                        {nameOf(goalkeeper.player)}
+                      </span>
                     </div>
                   )}
                 </div>
                 {FORMATIONS[formation].map((rowSlots) => {
                   const wideCarrileros =
                     formation === "2-1-2-1-1" &&
-                    rowSlots.every((slot) => slot.label === "CAI" || slot.label === "CAD");
+                    rowSlots.every(
+                      (slot) => slot.label === "CAI" || slot.label === "CAD",
+                    );
 
                   return (
-                  <div
-                    key={rowSlots.map((slot) => slot.id).join("-")}
-                    className={wideCarrileros ? "flex items-start justify-between" : "grid items-start gap-1"}
-                    style={wideCarrileros ? undefined : { gridTemplateColumns: `repeat(${rowSlots.length}, minmax(0, 1fr))` }}
-                  >
-                    {rowSlots.map((slot) => {
-                      const starter = playerBySlot.get(slot.id);
-                      return (
-                        <div key={slot.id} className="flex min-h-[3.75rem] justify-center">
-                          {starter && (
-                            <div
-                              className="flex min-w-0 max-w-[5rem] flex-col items-center text-center text-xs text-white"
-                              title={nameOf(starter.player)}
-                            >
-                              <span className={`flex h-9 w-9 items-center justify-center rounded-full border-2 border-white font-bold shadow ${GROUP_COLORS[slot.group]}`}>
-                                {jerseyOf(starter.player, starter.jerseyNumber) ?? "—"}
-                              </span>
-                              <span className="mt-1 truncate font-bold">{nameOf(starter.player)}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                    <div
+                      key={rowSlots.map((slot) => slot.id).join("-")}
+                      className={
+                        wideCarrileros
+                          ? "flex items-start justify-between"
+                          : "grid items-start gap-1"
+                      }
+                      style={
+                        wideCarrileros
+                          ? undefined
+                          : {
+                              gridTemplateColumns: `repeat(${rowSlots.length}, minmax(0, 1fr))`,
+                            }
+                      }
+                    >
+                      {rowSlots.map((slot) => {
+                        const starter = playerBySlot.get(slot.id);
+                        return (
+                          <div
+                            key={slot.id}
+                            className="flex min-h-15 justify-center"
+                          >
+                            {starter && (
+                              <div
+                                className="flex min-w-0 max-w-20 flex-col items-center text-center text-xs text-white"
+                                title={nameOf(starter.player)}
+                              >
+                                <span
+                                  className={`flex h-9 w-9 items-center justify-center rounded-full border-2 border-white font-bold shadow ${GROUP_COLORS[slot.group]}`}
+                                >
+                                  {jerseyOf(
+                                    starter.player,
+                                    starter.jerseyNumber,
+                                  ) ?? "—"}
+                                </span>
+                                <span className="mt-1 truncate font-bold">
+                                  {nameOf(starter.player)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   );
                 })}
               </div>
             </div>
           ) : (
-            <p className="mt-3 text-sm text-gray-600">Aún no hay alineación registrada.</p>
+            <p className="mt-3 text-sm text-gray-600">
+              Aún no hay alineación registrada.
+            </p>
           )}
         </section>
 
         <section className="rounded border border-gray-200 p-4">
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="text-lg font-semibold">Goles</h2>
-            <span className="text-sm text-gray-500">{goals.length} registrados</span>
+            <span className="text-sm text-gray-500">
+              {goals.length} registrados
+            </span>
           </div>
           {goals.length > 0 ? (
             <ul className="mt-3 divide-y divide-gray-100 rounded border border-gray-200">
@@ -214,15 +256,25 @@ function MatchSummary({
                   </span>
                   <span className="col-start-2 row-start-1 flex flex-col items-center justify-center gap-0.5 text-gray-500">
                     <EventIcon
-                      kind={event.ownGoal ? "ownGoal" : event.penalty ? "penalty" : "goal"}
+                      kind={
+                        event.ownGoal
+                          ? "ownGoal"
+                          : event.penalty
+                            ? "penalty"
+                            : "goal"
+                      }
                     />
-                    <span className="font-semibold tabular-nums">{event.minute}'</span>
+                    <span className="font-semibold tabular-nums">
+                      {event.minute}'
+                    </span>
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-gray-600">Todavía no hay goles registrados.</p>
+            <p className="mt-3 text-sm text-gray-600">
+              Todavía no hay goles registrados.
+            </p>
           )}
         </section>
       </div>
@@ -230,20 +282,30 @@ function MatchSummary({
       <section className="rounded border border-gray-200 p-4">
         <h2 className="text-lg font-semibold">Estadísticas del partido</h2>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[22rem] text-sm">
+          <table className="w-full min-w-88 text-sm">
             <thead className="border-b border-gray-200 text-gray-600">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Estadística</th>
-                <th className="px-3 py-2 text-center font-medium">{teamName}</th>
-                <th className="px-3 py-2 text-center font-medium">{match.opponent.name}</th>
+                <th className="px-3 py-2 text-center font-medium">
+                  {teamName}
+                </th>
+                <th className="px-3 py-2 text-center font-medium">
+                  {match.opponent.name}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {statistics.map(([label, ours, theirs]) => (
                 <tr key={label}>
-                  <th className="px-3 py-2 text-left font-normal text-gray-700">{label}</th>
-                  <td className="px-3 py-2 text-center font-semibold tabular-nums">{ours}</td>
-                  <td className="px-3 py-2 text-center font-semibold tabular-nums">{theirs}</td>
+                  <th className="px-3 py-2 text-left font-normal text-gray-700">
+                    {label}
+                  </th>
+                  <td className="px-3 py-2 text-center font-semibold tabular-nums">
+                    {ours}
+                  </td>
+                  <td className="px-3 py-2 text-center font-semibold tabular-nums">
+                    {theirs}
+                  </td>
                 </tr>
               ))}
             </tbody>

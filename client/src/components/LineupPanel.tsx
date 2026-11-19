@@ -1,7 +1,9 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FORMATION_OPTIONS,
+  F7_FORMATION_OPTIONS,
   F8_FORMATION_OPTIONS,
   saveLineup,
   type Formation,
@@ -122,6 +124,27 @@ export const FORMATIONS: Record<Formation, SlotSpec[][]> = {
     row("mid", ["MI", "MC", "MC", "MD"]),
     row("att", ["DC"]),
   ],
+  "2-3-1": [
+    row("def", ["DFC", "DFC"]),
+    row("mid", ["CAI", "MC", "CAD"]),
+    row("att", ["DC"]),
+  ],
+  "2-2-2": [
+    row("def", ["DFC", "DFC"]),
+    row("mid", ["MC", "MC"]),
+    row("att", ["DC", "DC"]),
+  ],
+  "3-2-1": [
+    row("def", ["LI", "DFC", "LD"]),
+    row("mid", ["MC", "MC"]),
+    row("att", ["DC"]),
+  ],
+  "3-3-0": [row("def", ["LI", "DFC", "LD"]), row("mid", ["MI", "MC", "MD"])],
+  "3-1-2": [
+    row("def", ["LI", "DFC", "LD"]),
+    row("pivot", ["PIV"]),
+    row("att", ["DC", "DC"]),
+  ],
   "2-4-1": [
     row("def", ["DFC", "DFC"]),
     row("mid", ["CAI", "MC", "MC", "CAD"]),
@@ -223,11 +246,28 @@ function LineupPanel({ teamId, match, canEdit }: LineupPanelProps) {
   const queryClient = useQueryClient();
   const lineup = match.lineup;
   const required = lineup?.startersRequired ?? 11;
-  const formationOptions = required === 8 ? F8_FORMATION_OPTIONS : FORMATION_OPTIONS.filter(
-    (option) => !F8_FORMATION_OPTIONS.includes(option as (typeof F8_FORMATION_OPTIONS)[number]),
-  );
-  const defaultFormation = required === 8 ? F8_FORMATION_OPTIONS[0] : "4-4-2";
-  const editable = canEdit && (match.status === "pending" || match.status === "playing");
+  const formationOptions =
+    required === 7
+      ? F7_FORMATION_OPTIONS
+      : required === 8
+        ? F8_FORMATION_OPTIONS
+        : FORMATION_OPTIONS.filter(
+            (option) =>
+              !F7_FORMATION_OPTIONS.includes(
+                option as (typeof F7_FORMATION_OPTIONS)[number],
+              ) &&
+              !F8_FORMATION_OPTIONS.includes(
+                option as (typeof F8_FORMATION_OPTIONS)[number],
+              ),
+          );
+  const defaultFormation =
+    required === 7
+      ? F7_FORMATION_OPTIONS[0]
+      : required === 8
+        ? F8_FORMATION_OPTIONS[0]
+        : "4-4-2";
+  const editable =
+    canEdit && (match.status === "pending" || match.status === "playing");
   const [formation, setFormation] = useState<Formation>(
     lineup?.formation ?? defaultFormation,
   );
@@ -468,7 +508,10 @@ function LineupPanel({ teamId, match, canEdit }: LineupPanelProps) {
   const renderSlot = (slot: SlotSpec, edge = false) => {
     const player = called.find((item) => item.id === assignments[slot.id]);
     return (
-      <div key={slot.id} className={`flex justify-center ${edge ? "w-auto" : "w-full"}`}>
+      <div
+        key={slot.id}
+        className={`flex justify-center ${edge ? "w-auto" : "w-full"}`}
+      >
         <button
           type="button"
           disabled={!editable}
@@ -581,7 +624,7 @@ function LineupPanel({ teamId, match, canEdit }: LineupPanelProps) {
         </ul>
       )}
       <div className="w-full max-w-full overflow-x-auto rounded-xl">
-        <div className="relative h-[40rem] w-full min-w-0 max-w-full overflow-visible rounded-xl border-4 border-white bg-green-700 p-3 shadow-inner">
+        <div className="relative h-160 w-full min-w-0 max-w-full overflow-visible rounded-xl border-4 border-white bg-green-700 p-3 shadow-inner">
           <div className="pointer-events-none absolute inset-0 border-2 border-white/90" />
           <div className="pointer-events-none absolute inset-y-[22%] left-0 w-28 border-y-2 border-r-2 border-white/70" />
           <div className="pointer-events-none absolute inset-y-[22%] right-0 w-28 border-y-2 border-l-2 border-white/70" />
@@ -600,15 +643,23 @@ function LineupPanel({ teamId, match, canEdit }: LineupPanelProps) {
               {FORMATIONS[formation].map((rowSlots, index) => {
                 const wideCarrileros =
                   formation === "2-1-2-1-1" &&
-                  rowSlots.every((slot) => slot.label === "CAI" || slot.label === "CAD");
+                  rowSlots.every(
+                    (slot) => slot.label === "CAI" || slot.label === "CAD",
+                  );
+                const threeZeroPlacement =
+                  formation === "3-3-0"
+                    ? index === 0
+                      ? "-translate-x-1/4"
+                      : "-translate-x-1/2"
+                    : "";
 
                 return (
                   <div
                     key={index}
-                    className={`flex min-w-0 flex-1 flex-col items-center gap-1 ${wideCarrileros ? "justify-between py-8" : "justify-evenly"}`}
+                    className={`flex min-w-0 flex-1 flex-col items-center gap-1 ${wideCarrileros ? "justify-between py-8" : "justify-evenly"} ${threeZeroPlacement}`}
                   >
                     <div className="contents">
-                      {rowSlots.map(renderSlot)}
+                      {rowSlots.map((slot) => renderSlot(slot))}
                     </div>
                   </div>
                 );

@@ -1,20 +1,57 @@
 import { Schema, model, Types } from "mongoose";
 
 // Tipo de partido. Más adelante la liga se vinculará a su competición.
-export const MATCH_COMPETITIONS = ["league", "cup", "tournament", "friendly"] as const;
+export const MATCH_COMPETITIONS = [
+  "league",
+  "cup",
+  "tournament",
+  "friendly",
+] as const;
 // Sede desde nuestro punto de vista: en casa, fuera o en campo neutral
 export const MATCH_VENUES = ["home", "away", "neutral"] as const;
 // pending: pendiente · playing: jugando · finished: finalizado
 export const MATCH_STATUSES = ["pending", "playing", "finished"] as const;
-export const F8_FORMATION_OPTIONS = ["2-4-1", "2-1-2-1-1", "2-3-2", "3-3-1", "3-2-2"] as const;
-export const CLASSIC_FORMATION_OPTIONS = ["4-4-2", "4-3-3", "4-2-3-1", "4-1-4-1", "3-4-3", "3-5-2", "5-2-3", "5-3-2", "5-4-1"] as const;
-export const FORMATION_OPTIONS = [...CLASSIC_FORMATION_OPTIONS, ...F8_FORMATION_OPTIONS] as const;
+export const F7_FORMATION_OPTIONS = [
+  "2-3-1",
+  "2-2-2",
+  "3-2-1",
+  "3-3-0",
+  "3-1-2",
+] as const;
+export const F8_FORMATION_OPTIONS = [
+  "2-4-1",
+  "2-1-2-1-1",
+  "2-3-2",
+  "3-3-1",
+  "3-2-2",
+] as const;
+export const CLASSIC_FORMATION_OPTIONS = [
+  "4-4-2",
+  "4-3-3",
+  "4-2-3-1",
+  "4-1-4-1",
+  "3-4-3",
+  "3-5-2",
+  "5-2-3",
+  "5-3-2",
+  "5-4-1",
+] as const;
+export const FORMATION_OPTIONS = [
+  ...CLASSIC_FORMATION_OPTIONS,
+  ...F8_FORMATION_OPTIONS,
+  ...F7_FORMATION_OPTIONS,
+] as const;
 export type Formation = (typeof FORMATION_OPTIONS)[number];
 
 export type MatchCompetition = (typeof MATCH_COMPETITIONS)[number];
 export type MatchStatus = (typeof MATCH_STATUSES)[number];
 
-export const MATCH_EVENT_TYPES = ["goal", "yellow_card", "red_card", "substitution"] as const;
+export const MATCH_EVENT_TYPES = [
+  "goal",
+  "yellow_card",
+  "red_card",
+  "substitution",
+] as const;
 export type MatchEventType = (typeof MATCH_EVENT_TYPES)[number];
 export const MATCH_EVENT_SIDES = ["for", "against"] as const;
 export type MatchEventSide = (typeof MATCH_EVENT_SIDES)[number];
@@ -75,7 +112,7 @@ const callupSchema = new Schema<ICallupEntry>(
     starter: { type: Boolean, default: false },
     slot: { type: String, trim: true, maxlength: 40 },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const eventSchema = new Schema<IMatchEvent>(
@@ -91,7 +128,7 @@ const eventSchema = new Schema<IMatchEvent>(
     penalty: { type: Boolean, default: false },
     ownGoal: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 /**
@@ -112,7 +149,10 @@ const matchSchema = new Schema<IMatch>(
     competition: { type: String, enum: MATCH_COMPETITIONS, required: true },
     venue: { type: String, enum: MATCH_VENUES, required: true },
     date: { type: Date, required: true },
-    time: { type: String, match: [/^([01]\d|2[0-3]):[0-5]\d$/, "Formato esperado: HH:MM"] },
+    time: {
+      type: String,
+      match: [/^([01]\d|2[0-3]):[0-5]\d$/, "Formato esperado: HH:MM"],
+    },
     durationMinutes: { type: Number, min: 10, max: 120 },
     city: { type: String, trim: true, maxlength: 80 },
     fieldName: { type: String, trim: true, maxlength: 120 },
@@ -125,7 +165,7 @@ const matchSchema = new Schema<IMatch>(
     callup: { type: [callupSchema], default: [] },
     events: { type: [eventSchema], default: [] },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Los partidos de una temporada se piden siempre ordenados por fecha
