@@ -11,6 +11,9 @@ importers:
       concurrently:
         specifier: ^10.0.6
         version: 10.0.6
+      dotenv:
+        specifier: ^18.0.10
+        version: 18.0.10
 
 packages:
 
@@ -33,6 +36,11 @@ packages:
   concurrently@10.0.6:
     resolution: {integrity: sha512-qgICXXFp2/3nAebRLmxcINKEXM1mLK3ij/y31P02VTs/KIkddIeC05n73DxOXsXMB9LFSqNU1/na3lDlOhcbIw==}
     engines: {node: '>=22'}
+    hasBin: true
+
+  dotenv@18.0.10:
+    resolution: {integrity: sha512-89FAA1xchzK2mxVWdr5F/0rldwiueXs6zJM86rO66EzekR1iBdiXRthyG+m5GvkJaFH3C2LESzamTkgndmLT2A==}
+    engines: {node: '>=12'}
     hasBin: true
 
   emoji-regex@10.6.0:
@@ -114,6 +122,8 @@ snapshots:
       supports-color: 10.2.2
       tree-kill: 1.2.2
       yargs: 18.0.0
+
+  dotenv@18.0.10: {}
 
   emoji-regex@10.6.0: {}
 
