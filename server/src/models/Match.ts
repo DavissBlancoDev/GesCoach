@@ -55,6 +55,8 @@ export const MATCH_EVENT_TYPES = [
 export type MatchEventType = (typeof MATCH_EVENT_TYPES)[number];
 export const MATCH_EVENT_SIDES = ["for", "against"] as const;
 export type MatchEventSide = (typeof MATCH_EVENT_SIDES)[number];
+export const MATCH_EVENT_PERIODS = ["first", "second"] as const;
+export type MatchEventPeriod = (typeof MATCH_EVENT_PERIODS)[number];
 
 // Un convocado y su papel en la alineación
 interface ICallupEntry {
@@ -68,6 +70,7 @@ interface IMatchEvent {
   _id?: Types.ObjectId;
   type: MatchEventType;
   minute: number;
+  period?: MatchEventPeriod;
   side?: MatchEventSide;
   player?: Types.ObjectId;
   assist?: Types.ObjectId;
@@ -119,6 +122,7 @@ const eventSchema = new Schema<IMatchEvent>(
   {
     type: { type: String, enum: MATCH_EVENT_TYPES, required: true },
     minute: { type: Number, min: 0, max: 120, required: true },
+    period: { type: String, enum: MATCH_EVENT_PERIODS },
     side: { type: String, enum: MATCH_EVENT_SIDES },
     player: { type: Schema.Types.ObjectId, ref: "Player" },
     assist: { type: Schema.Types.ObjectId, ref: "Player" },

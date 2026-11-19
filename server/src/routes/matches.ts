@@ -11,6 +11,7 @@ import {
   MATCH_STATUSES,
   MATCH_EVENT_TYPES,
   MATCH_EVENT_SIDES,
+  MATCH_EVENT_PERIODS,
   FORMATION_OPTIONS,
   F7_FORMATION_OPTIONS,
   F8_FORMATION_OPTIONS,
@@ -117,6 +118,7 @@ const eventSchema = z
   .object({
     type: z.enum(MATCH_EVENT_TYPES),
     minute: z.number().int().min(0).max(120),
+    period: z.enum(MATCH_EVENT_PERIODS),
     side: z.enum(MATCH_EVENT_SIDES).optional(),
     player: objectId.optional(),
     assist: objectId.optional(),
@@ -248,6 +250,7 @@ function toMatchItem(
           id: event._id?.toString() ?? "",
           type: event.type,
           minute: event.minute,
+          period: event.period,
           side: event.side,
           player: event.player?.toString(),
           assist: event.assist?.toString(),
@@ -643,11 +646,9 @@ router.patch<MatchParams>("/:matchId/score", async (req, res) => {
 router.put<MatchParams>("/:matchId/callup", async (req, res) => {
   const role = res.locals.role as Role;
   if (!canEditCallup(role)) {
-    return res
-      .status(403)
-      .json({
-        error: "Solo el entrenador principal puede hacer la convocatoria",
-      });
+    return res.status(403).json({
+      error: "Solo el entrenador principal puede hacer la convocatoria",
+    });
   }
 
   const parsed = callupSchema.safeParse(req.body);
@@ -663,11 +664,9 @@ router.put<MatchParams>("/:matchId/callup", async (req, res) => {
     return res.status(404).json({ error: "Partido no encontrado" });
   }
   if (match.status !== "pending") {
-    return res
-      .status(409)
-      .json({
-        error: "La convocatoria solo se puede cambiar con el partido pendiente",
-      });
+    return res.status(409).json({
+      error: "La convocatoria solo se puede cambiar con el partido pendiente",
+    });
   }
 
   const ids = parsed.data.players;
@@ -740,11 +739,9 @@ router.put<MatchParams>("/:matchId/callup", async (req, res) => {
 router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
   const role = res.locals.role as Role;
   if (!canEditLineup(role)) {
-    return res
-      .status(403)
-      .json({
-        error: "Solo el entrenador principal puede hacer la alineación",
-      });
+    return res.status(403).json({
+      error: "Solo el entrenador principal puede hacer la alineación",
+    });
   }
 
   const parsed = lineupSchema.safeParse(req.body);
@@ -760,12 +757,10 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
     return res.status(404).json({ error: "Partido no encontrado" });
   }
   if (match.status !== "pending" && match.status !== "playing") {
-    return res
-      .status(409)
-      .json({
-        error:
-          "La alineación solo se puede cambiar con el partido pendiente o jugando",
-      });
+    return res.status(409).json({
+      error:
+        "La alineación solo se puede cambiar con el partido pendiente o jugando",
+    });
   }
 
   const season = await Season.findById(match.season);
@@ -779,11 +774,9 @@ router.put<MatchParams>("/:matchId/lineup", async (req, res) => {
     sent.length !== calledUp.size ||
     sent.some((p) => !calledUp.has(p.player))
   ) {
-    return res
-      .status(400)
-      .json({
-        error: "La alineación debe incluir exactamente a los convocados",
-      });
+    return res.status(400).json({
+      error: "La alineación debe incluir exactamente a los convocados",
+    });
   }
 
   const required = startersRequired(season.modality);
@@ -869,22 +862,18 @@ router.post<MatchParams>("/:matchId/events", async (req, res) => {
 
   const parsed = eventSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res
-      .status(400)
-      .json({
-        error: "Datos no válidos",
-        details: parsed.error.flatten().fieldErrors,
-      });
+    return res.status(400).json({
+      error: "Datos no válidos",
+      details: parsed.error.flatten().fieldErrors,
+    });
   }
 
   const match = await findMatch(req.params.teamId, req.params.matchId);
   if (!match) return res.status(404).json({ error: "Partido no encontrado" });
   if (match.status !== "playing") {
-    return res
-      .status(409)
-      .json({
-        error: "Los eventos solo se pueden registrar mientras se juega",
-      });
+    return res.status(409).json({
+      error: "Los eventos solo se pueden registrar mientras se juega",
+    });
   }
 
   const event = parsed.data;
@@ -908,11 +897,9 @@ router.post<MatchParams>("/:matchId/events", async (req, res) => {
       .json({ error: "El goleador y el asistente deben ser distintos" });
   }
   if (event.playerIn && event.playerIn === event.playerOut) {
-    return res
-      .status(400)
-      .json({
-        error: "El jugador que entra y el que sale deben ser distintos",
-      });
+    return res.status(400).json({
+      error: "El jugador que entra y el que sale deben ser distintos",
+    });
   }
 
   match.events.push({

@@ -11,6 +11,7 @@ export type MatchEventType =
   | "red_card"
   | "substitution";
 export type MatchEventSide = "for" | "against";
+export type MatchEventPeriod = "first" | "second";
 export const F7_FORMATION_OPTIONS = [
   "2-3-1",
   "2-2-2",
@@ -44,6 +45,7 @@ export interface MatchEvent {
   id: string;
   type: MatchEventType;
   minute: number;
+  period?: MatchEventPeriod;
   side?: MatchEventSide;
   player?: string;
   assist?: string;
@@ -53,6 +55,12 @@ export interface MatchEvent {
   penalty: boolean;
   ownGoal: boolean;
 }
+
+/** Orden cronológico de los eventos, independientemente del orden de alta. */
+export const compareMatchEvents = (a: MatchEvent, b: MatchEvent) =>
+  Number(a.period === "second") - Number(b.period === "second") ||
+  a.minute - b.minute ||
+  a.id.localeCompare(b.id);
 
 export interface Opponent {
   id: string;
@@ -205,6 +213,7 @@ export const saveLineup = (teamId: string, matchId: string, data: LineupData) =>
 export interface MatchEventData {
   type: MatchEventType;
   minute: number;
+  period: MatchEventPeriod;
   side?: MatchEventSide;
   player?: string;
   assist?: string;

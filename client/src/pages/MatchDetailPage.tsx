@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   deleteMatch,
+  compareMatchEvents,
   updateMatchScore,
   updateMatchStatus,
   type Match,
@@ -76,9 +77,14 @@ function MatchSummary({
   const jerseyOf = (playerId: string, matchJersey?: number) =>
     matchJersey ??
     players?.find((player) => player.id === playerId)?.jerseyNumber;
-  const goals = (match.events ?? [])
-    .filter((event) => event.type === "goal")
-    .sort((a, b) => a.minute - b.minute);
+  const summaryEvents = (match.events ?? [])
+    .filter(
+      (event) =>
+        event.type === "goal" ||
+        event.type === "yellow_card" ||
+        event.type === "red_card",
+    )
+    .sort(compareMatchEvents);
   const statistics = [
     ["Goles", match.goalsFor ?? 0, match.goalsAgainst ?? 0],
     ["Tiros", "—", "—"],
@@ -90,8 +96,10 @@ function MatchSummary({
 
   const sideName = (event: MatchEvent) =>
     event.side === "for" ? teamName : match.opponent.name;
-  const isGoalOnRight = (event: MatchEvent) =>
-    match.venue === "away" ? event.side === "for" : event.side !== "for";
+  const isEventOnRight = (event: MatchEvent) => {
+    const isForUs = event.type !== "goal" || event.side === "for";
+    return match.venue === "away" ? isForUs : !isForUs;
+  };
   const goalDescription = (event: MatchEvent) =>
     event.ownGoal
       ? "Gol en propia meta"
@@ -101,9 +109,23 @@ function MatchSummary({
           ? "Gol de penalti"
           : "Gol";
   const goalActor = (event: MatchEvent) =>
-    event.player && (event.side === "for" || event.ownGoal)
-      ? nameOf(event.player)
-      : sideName(event);
+    event.side === "against"
+      ? event.opponentJerseyNumber !== undefined
+        ? `Dorsal ${event.opponentJerseyNumber}`
+        : event.player
+          ? nameOf(event.player)
+          : "Rival"
+      : event.player
+        ? nameOf(event.player)
+        : sideName(event);
+  const eventActor = (event: MatchEvent) =>
+    event.type === "goal" ? goalActor(event) : nameOf(event.player);
+  const eventDescription = (event: MatchEvent) =>
+    event.type === "goal"
+      ? goalDescription(event)
+      : event.type === "yellow_card"
+        ? "Tarjeta amarilla"
+        : "Tarjeta roja";
 
   return (
     <section className="mt-6 space-y-4" aria-label="Resumen del partido">
@@ -205,63 +227,51 @@ function MatchSummary({
 
         <section className="rounded border border-gray-200 p-4">
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-lg font-semibold">Goles</h2>
+            <h2 className="text-lg font-semibold">Eventos</h2>
             <span className="text-sm text-gray-500">
-              {goals.length} registrados
+              {summaryEvents.length} registrados
             </span>
           </div>
-          {goals.length > 0 ? (
+          {summaryEvents.length > 0 ? (
             <ul className="mt-3 divide-y divide-gray-100 rounded border border-gray-200">
-              {goals.map((event) => (
+              {summaryEvents.map((event) => (
                 <li
                   key={event.id}
                   className="grid grid-cols-[minmax(0,1fr)_4rem_minmax(0,1fr)] items-center gap-2 px-3 py-2 text-sm"
                 >
                   <span
                     className={`row-start-1 flex min-w-0 items-center gap-2 ${
-                      isGoalOnRight(event)
+                      isEventOnRight(event)
                         ? "col-start-3 justify-start text-left"
                         : "col-start-1 justify-end text-right"
                     }`}
                   >
-                    {isGoalOnRight(event) ? (
-                      <span className="min-w-0">
-                        <span className="block truncate font-semibold">
-                          {goalActor(event)}
-                          {event.assist && (
-                            <span className="font-normal text-gray-600">
-                              {` (${nameOf(event.assist)})`}
-                            </span>
-                          )}
-                        </span>
-                        <span className="block truncate text-xs text-gray-600">
-                          {goalDescription(event)}
-                        </span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold">
+                        {eventActor(event)}
+                        {event.type === "goal" && event.assist && (
+                          <span className="font-normal text-gray-600">
+                            {` (${nameOf(event.assist)})`}
+                          </span>
+                        )}
                       </span>
-                    ) : (
-                      <span className="min-w-0">
-                        <span className="block truncate font-semibold">
-                          {goalActor(event)}
-                          {event.assist && (
-                            <span className="font-normal text-gray-600">
-                              {` (${nameOf(event.assist)})`}
-                            </span>
-                          )}
-                        </span>
-                        <span className="block truncate text-xs text-gray-600">
-                          {goalDescription(event)}
-                        </span>
+                      <span className="block truncate text-xs text-gray-600">
+                        {eventDescription(event)}
                       </span>
-                    )}
+                    </span>
                   </span>
                   <span className="col-start-2 row-start-1 flex flex-col items-center justify-center gap-0.5 text-gray-500">
                     <EventIcon
                       kind={
-                        event.ownGoal
-                          ? "ownGoal"
-                          : event.penalty
-                            ? "penalty"
-                            : "goal"
+                        event.type === "yellow_card"
+                          ? "yellow"
+                          : event.type === "red_card"
+                            ? "red"
+                            : event.ownGoal
+                              ? "ownGoal"
+                              : event.penalty
+                                ? "penalty"
+                                : "goal"
                       }
                     />
                     <span className="font-semibold tabular-nums">
@@ -273,7 +283,7 @@ function MatchSummary({
             </ul>
           ) : (
             <p className="mt-3 text-sm text-gray-600">
-              Todavía no hay goles registrados.
+              Todavía no hay eventos registrados.
             </p>
           )}
         </section>
@@ -326,6 +336,16 @@ interface ScoreboardProps {
   editable: boolean;
   busy: boolean;
   onChange: (side: "us" | "them", delta: number) => void;
+  minute: number;
+  onMinuteChange: (delta: number) => void;
+  half: 1 | 2;
+  onHalfChange: (half: 1 | 2) => void;
+  statusBusy: boolean;
+  onFinish: () => void;
+  canReopen: boolean;
+  onReopen: () => void;
+  canStart: boolean;
+  onStart: () => void;
 }
 
 /**
@@ -340,6 +360,16 @@ function Scoreboard({
   editable,
   busy,
   onChange,
+  minute,
+  onMinuteChange,
+  half,
+  onHalfChange,
+  statusBusy,
+  onFinish,
+  canReopen,
+  onReopen,
+  canStart,
+  onStart,
 }: ScoreboardProps) {
   const us = { key: "us" as const, name: teamName, goals: match.goalsFor };
   const them = {
@@ -351,6 +381,13 @@ function Scoreboard({
 
   const started = match.status !== "pending";
   const style = match.result ? RESULT_STYLES[match.result] : undefined;
+  const halfDuration = Math.ceil(match.durationMinutes / 2);
+  const minuteLabel =
+    minute > match.durationMinutes
+      ? `${match.durationMinutes}'+${minute - match.durationMinutes}'`
+      : half === 1 && minute > halfDuration
+        ? `${halfDuration}'+${minute - halfDuration}'`
+        : `${minute}'`;
 
   const renderSide = (side: typeof us | typeof them) => (
     <div
@@ -371,9 +408,9 @@ function Scoreboard({
             disabled={busy || (side.goals ?? 0) <= 0}
             aria-label={`Quitar un gol a ${side.name}`}
             onClick={() => onChange(side.key, -1)}
-            className="h-10 w-10 rounded border border-gray-300 text-xl disabled:opacity-40"
+            className="h-10 w-10 rounded border border-gray-300 text-xl text-transparent disabled:opacity-40"
           >
-            −
+            <i aria-hidden="true" className="bi bi-dash-lg text-gray-700" />
           </button>
           <button
             type="button"
@@ -382,7 +419,7 @@ function Scoreboard({
             onClick={() => onChange(side.key, 1)}
             className="h-10 w-10 rounded bg-green-700 text-xl text-white disabled:opacity-40"
           >
-            +
+            <i aria-hidden="true" className="bi bi-plus-lg" />
           </button>
         </div>
       )}
@@ -398,13 +435,114 @@ function Scoreboard({
         {started && <span className="pt-20 text-2xl text-gray-400">-</span>}
         {renderSide(right)}
       </div>
-      {!started && (
-        <p className="mt-3 text-center text-sm text-gray-600">
-          El partido aún no ha empezado.
-        </p>
+      {started && (
+        <>
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              disabled={!editable || minute <= (half === 2 ? halfDuration : 0)}
+              onClick={() => onMinuteChange(-10)}
+              className="inline-flex h-8 items-center gap-1 rounded-full border border-gray-300 px-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Restar diez minutos"
+            >
+              <i aria-hidden="true" className="bi bi-chevron-left" /> 10'
+            </button>
+            <button
+              type="button"
+              disabled={!editable || minute <= 0}
+              onClick={() => onMinuteChange(-1)}
+              className="h-9 w-11 rounded-full border border-gray-300 text-xl text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Restar un minuto"
+            >
+              <i aria-hidden="true" className="bi bi-dash-lg" />
+            </button>
+            <span
+              className="flex min-w-20 items-center justify-center gap-1.5 text-sm font-semibold tabular-nums text-gray-600"
+              aria-label={`Minuto ${minuteLabel}`}
+            >
+              <i aria-hidden="true" className="bi bi-clock text-base" />
+              {minuteLabel}
+            </span>
+            <button
+              type="button"
+              disabled={!editable || minute >= 120}
+              onClick={() => onMinuteChange(1)}
+              className="h-9 w-11 rounded-full border border-gray-300 text-xl text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Añadir un minuto"
+            >
+              <i aria-hidden="true" className="bi bi-plus-lg" />
+            </button>
+            <button
+              type="button"
+              disabled={!editable || minute >= 120}
+              onClick={() => onMinuteChange(10)}
+              className="inline-flex h-8 items-center gap-1 rounded-full border border-gray-300 px-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Añadir diez minutos"
+            >
+              10' <i aria-hidden="true" className="bi bi-chevron-right" />
+            </button>
+          </div>
+          {editable && half === 1 && minute >= halfDuration && (
+            <button
+              type="button"
+              onClick={() => onHalfChange(2)}
+              className="mx-auto mt-3 block rounded-xl bg-[#173b2b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#24553c]"
+            >
+              Finalizar primer tiempo
+            </button>
+          )}
+          {editable && half === 2 && (
+            <button
+              type="button"
+              onClick={() => onHalfChange(1)}
+              className="mx-auto mt-3 block rounded-xl border border-[#b9cbb5] bg-white px-4 py-2 text-sm font-semibold text-[#173b2b] transition hover:bg-[#edf3e9]"
+            >
+              Volver al Primer Tiempo
+            </button>
+          )}
+          {editable && minute >= match.durationMinutes && (
+            <button
+              type="button"
+              disabled={statusBusy}
+              onClick={onFinish}
+              className="mx-auto mt-3 block rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {statusBusy ? "Finalizando..." : "Finalizar partido"}
+            </button>
+          )}
+        </>
       )}
       {style && (
-        <p className="mt-3 text-center text-sm font-semibold">{style.label}</p>
+        <div className="mt-3 text-center">
+          <p className="text-sm font-semibold">{style.label}</p>
+          {match.status === "finished" && canReopen && (
+            <button
+              type="button"
+              disabled={statusBusy}
+              onClick={onReopen}
+              className="mt-2 rounded border border-gray-300 px-4 py-2 text-sm disabled:opacity-50"
+            >
+              Reabrir partido
+            </button>
+          )}
+        </div>
+      )}
+      {!started && (
+        <div className="mt-3 text-center">
+          <p className="text-sm text-gray-600">
+            El partido aún no ha empezado.
+          </p>
+          {canStart && (
+            <button
+              type="button"
+              disabled={statusBusy}
+              onClick={onStart}
+              className="mt-3 rounded-xl bg-green-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {statusBusy ? "Comenzando..." : "Comenzar partido"}
+            </button>
+          )}
+        </div>
       )}
     </section>
   );
@@ -425,6 +563,10 @@ function MatchDetailPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [matchMinute, setMatchMinute] = useState(0);
+  const [matchHalf, setMatchHalf] = useState<1 | 2>(1);
+  const [firstHalfEndMinute, setFirstHalfEndMinute] = useState<number>();
+  const [matchEndMinute, setMatchEndMinute] = useState<number>();
   const [activeTab, setActiveTab] = useState<
     "summary" | "events" | "callup" | "lineup"
   >("summary");
@@ -621,6 +763,38 @@ function MatchDetailPage() {
                   editable={canRecord && match.status === "playing"}
                   busy={scoreMutation.isPending}
                   onChange={changeScore}
+                  minute={matchMinute}
+                  onMinuteChange={(delta) =>
+                    setMatchMinute((currentMinute) =>
+                      Math.max(
+                        matchHalf === 2
+                          ? Math.ceil(match.durationMinutes / 2)
+                          : 0,
+                        Math.min(120, currentMinute + delta),
+                      ),
+                    )
+                  }
+                  half={matchHalf}
+                  onHalfChange={(half) => {
+                    if (half === 2) {
+                      setFirstHalfEndMinute(matchMinute);
+                    }
+                    setMatchHalf(half);
+                    if (half === 2) {
+                      setMatchMinute(Math.ceil(match.durationMinutes / 2));
+                    } else {
+                      setMatchMinute(Math.ceil(match.durationMinutes / 2));
+                    }
+                  }}
+                  statusBusy={statusMutation.isPending}
+                  onFinish={() => {
+                    setMatchEndMinute(matchMinute);
+                    statusMutation.mutate("finished");
+                  }}
+                  canReopen={canRecord}
+                  onReopen={() => statusMutation.mutate("playing")}
+                  canStart={canRecord && match.status === "pending"}
+                  onStart={() => statusMutation.mutate("playing")}
                 />
                 {scoreMutation.isError && (
                   <p className="mt-2 text-sm text-red-600">
@@ -637,7 +811,7 @@ function MatchDetailPage() {
                   {(
                     [
                       ["summary", "Resumen"],
-                      ["events", "Eventos"],
+                      ["events", "Cronología"],
                       ["callup", "Convocatoria"],
                       ["lineup", "Alineación"],
                     ] as const
@@ -670,14 +844,6 @@ function MatchDetailPage() {
                           <>
                             <button
                               type="button"
-                              disabled={statusMutation.isPending}
-                              onClick={() => statusMutation.mutate("finished")}
-                              className="rounded bg-green-700 px-4 py-2 text-white disabled:opacity-50"
-                            >
-                              Finalizar partido
-                            </button>
-                            <button
-                              type="button"
                               disabled={statusMutation.isPending || hasGoals}
                               title={
                                 hasGoals
@@ -690,16 +856,6 @@ function MatchDetailPage() {
                               Volver a pendiente
                             </button>
                           </>
-                        )}
-                        {match.status === "finished" && (
-                          <button
-                            type="button"
-                            disabled={statusMutation.isPending}
-                            onClick={() => statusMutation.mutate("playing")}
-                            className="rounded border border-gray-300 px-4 py-2 disabled:opacity-50"
-                          >
-                            Reabrir partido
-                          </button>
                         )}
                       </div>
                       {match.status === "finished" && (
@@ -743,6 +899,19 @@ function MatchDetailPage() {
                     teamId={team._id}
                     match={match}
                     canEdit={canRecord}
+                    currentMinute={matchMinute}
+                    currentMinuteLabel={
+                      matchMinute > match.durationMinutes
+                        ? `${match.durationMinutes}'+${matchMinute - match.durationMinutes}'`
+                        : matchHalf === 1 &&
+                            matchMinute > Math.ceil(match.durationMinutes / 2)
+                          ? `${Math.ceil(match.durationMinutes / 2)}'+${matchMinute - Math.ceil(match.durationMinutes / 2)}'`
+                          : `${matchMinute}'`
+                    }
+                    half={matchHalf}
+                    halfDuration={Math.ceil(match.durationMinutes / 2)}
+                    firstHalfEndMinute={firstHalfEndMinute}
+                    matchEndMinute={matchEndMinute}
                   />
                 )}
             </div>
@@ -774,15 +943,7 @@ function MatchDetailPage() {
               {activeTab === "summary" &&
                 match.status === "pending" &&
                 canRecord && (
-                  <div className="mt-6 space-y-2">
-                    <button
-                      type="button"
-                      disabled={statusMutation.isPending}
-                      onClick={() => statusMutation.mutate("playing")}
-                      className="rounded bg-green-700 px-4 py-2 text-white disabled:opacity-50"
-                    >
-                      Empezar partido
-                    </button>
+                  <div className="mt-6">
                     {statusMutation.isError && (
                       <div className="text-sm text-red-600">
                         <p>{statusMutation.error.message}</p>
