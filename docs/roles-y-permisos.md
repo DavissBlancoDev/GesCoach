@@ -27,7 +27,7 @@ El rol se guarda en la **membresía** (la relación entre usuario y equipo), no 
 
 | Rol | Clave | Quién es |
 | --- | --- | --- |
-| Entrenador principal | `head_coach` | Quien crea el equipo. Gestiona todo y es el único que invita |
+| Entrenador principal | `head_coach` | Quien crea el equipo. Gestiona todo y sería el único autorizado a invitar |
 | Segundo entrenador | `assistant_coach` | Cuerpo técnico con acceso amplio, sin gestión del equipo ni de miembros |
 | Delegado | `delegate` | La persona que acompaña al equipo en los partidos |
 | Responsable de equipo | `team_manager` | Director de cantera o miembro directivo. Observa desde fuera, y puede tener varios equipos |
@@ -92,7 +92,7 @@ Notas:
 - **Convocatoria y alineación.** Solo las edita el entrenador principal, y solo con el partido pendiente. La convocatoria se puede exportar al portapapeles desde el cliente. Solo se envían a quienes pueden verlas (entrenador principal, segundo entrenador y delegado). Los jugadores que se añaden deben estar disponibles; un convocado que después se lesiona se mantiene, y el cliente lo avisa.
 - **Acta y estadísticas.** El entrenador principal, segundo entrenador y delegado pueden registrar y eliminar eventos mientras el partido está en juego. Las estadísticas derivadas se muestran a los roles que pueden ver estadísticas; los minutos suman correctamente las reentradas.
 - **Notas del calendario.** El entrenador principal y el segundo entrenador pueden crear y eliminar notas o eventos personalizados. Todos los miembros pueden consultar el calendario.
-- **Ajustes del club y de la temporada.** Solo el entrenador principal puede cambiar el nombre, los colores, el país, la localidad, el campo, la temporada, la duración del partido, la competición y las amarillas que suponen una sanción. El resto de roles ve los ajustes sin poder cambiarlos. La categoría y la modalidad, además, se bloquean si la temporada ya tiene jugadores o partidos: el servidor responde `409`.
+- **Ajustes del club y de la temporada.** Solo el entrenador principal puede cambiar el nombre, los colores, el país, la localidad, el campo, la temporada, la duración del partido, la división (mostrada como competición) y las amarillas que suponen una sanción. El resto de roles ve los ajustes sin poder cambiarlos. La categoría y la modalidad, además, se bloquean si la temporada ya tiene jugadores o partidos: el servidor responde `409`.
 - **Miembros.** Todos los miembros ven los nombres y los roles del equipo. El correo solo lo ve el entrenador principal. Invitar a otros miembros está previsto.
 - **Dashboard.** Cada rol ve solo lo que le corresponde. Las tareas pendientes se limitan a lo que el rol puede resolver (por ejemplo, la convocatoria solo la ve el entrenador principal). El bloque de riesgo de sanción no se envía al médico, porque las amarillas son una estadística, y solo el entrenador principal ve la ruedecita para ajustar el límite.
 - **Perfil.** Cada usuario cambia sus propios datos. Cambiar el correo o la contraseña exige la contraseña actual. El rol aparece bloqueado: lo asigna el entrenador principal.

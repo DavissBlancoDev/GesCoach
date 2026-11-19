@@ -5,7 +5,7 @@ Este documento describe cómo se navega por GesCoach, qué muestra cada pantalla
 ## Flujo
 
 1. **Iniciar sesión** o **crear una cuenta**. Quien se registra pasa por el asistente de creación de equipo.
-2. **Pantalla de inicio** (`/`): saluda y lista los equipos a los que el usuario tiene acceso, cada uno con su categoría, modalidad, temporada, división y el rol del usuario. Si no tiene ninguno, se le lleva a crearlo.
+2. **Pantalla de inicio** (`/inicio`): saluda y lista los equipos a los que el usuario tiene acceso, cada uno con su categoría, modalidad, temporada, división y el rol del usuario. Si no tiene ninguno, se le lleva a crearlo. La ruta `/` es la landing pública.
 3. **Elegir un equipo** abre su dashboard, ya con la barra de navegación del equipo.
 4. **Cambiar de equipo** desde la cabecera devuelve a la pantalla de inicio.
 
@@ -17,13 +17,14 @@ El equipo elegido se guarda en el navegador (solo su identificador), no en la di
 | --- | --- | --- |
 | `/login` | Iniciar sesión | Público |
 | `/registro` | Crear cuenta | Público |
-| `/` | Inicio: elegir equipo | Con sesión |
+| `/inicio` | Inicio: elegir equipo | Con sesión |
 | `/crear-equipo` | Asistente de creación de equipo y primera temporada | Con sesión |
 | `/dashboard` | Dashboard | Con equipo elegido |
 | `/plantilla` y `/plantilla/:playerId` | Plantilla y ficha del jugador | Con equipo elegido |
 | `/entrenos` y `/entrenos/:trainingId` | Entrenos y pase de lista | Con equipo elegido |
 | `/partidos` y `/partidos/:matchId` | Partidos y ficha del partido | Con equipo elegido |
 | `/calendario` | Calendario mensual y notas/eventos | Con equipo elegido |
+| `/estadisticas` | Estadísticas de la temporada | Con equipo elegido y permiso de estadísticas |
 | `/perfil` | Mi perfil | Con equipo elegido |
 | `/ajustes` | Ajustes del club | Con equipo elegido |
 
@@ -31,7 +32,7 @@ El equipo elegido se guarda en el navegador (solo su identificador), no en la di
 
 - El **nombre del equipo**, el botón **Cambiar de equipo** y el **menú del usuario** ("Hola, [nombre]", con su foto de iniciales).
 - El menú tiene **Mi perfil**, **Ajustes del club** y **Cerrar sesión**, que al cerrar también limpia los datos en caché y el equipo elegido, para que no los vea otra persona en el mismo navegador.
-- Debajo, la barra de navegación: Dashboard, Plantilla, Entrenos, Partidos y Calendario. Si no caben en una línea, saltan a la siguiente.
+- Debajo, la barra de navegación: Dashboard, Plantilla, Entrenos, Partidos, Calendario y Estadísticas. Si no caben en una línea, saltan a la siguiente.
 
 ## Dashboard
 
@@ -67,6 +68,14 @@ Hasta que se registren las amarillas (con el acta del partido), el bloque de rie
 - Las notas tienen título obligatorio, hora opcional y detalles opcionales. El entrenador principal y el segundo entrenador pueden crearlas y eliminarlas.
 - Los partidos y entrenos enlazan con su detalle; las notas se gestionan desde la vista previa del día.
 
+Los entrenamientos muestran además su tipo —táctico, técnico, físico o mixto— junto con la fecha, hora y ubicación.
+
+## Estadísticas
+
+La pantalla `/estadisticas` está disponible para todos los roles excepto el médico. Muestra un resumen de la temporada con partidos jugados, resultados, goles, porterías a cero, puntos de liga y tarjetas.
+
+También incluye el análisis de diferencia de goles, goles a favor y encajados por partido, tarjetas por partido, líderes de la plantilla en goles y asistencias, y el recuento de tarjetas por jugador. Los datos se calculan a partir de los partidos finalizados y sus eventos.
+
 ## Detalle del partido
 
 - La convocatoria permite seleccionar jugadores, desmarcar a todos y exportar la lista numerada al portapapeles con nombre y primer apellido.
@@ -85,7 +94,7 @@ Hasta que se registren las amarillas (con el acta del partido), el bloque de rie
 ## Ajustes del club
 
 - Cabecera con el escudo (uno genérico hasta que se puedan subir imágenes), el nombre en negrita y, debajo, la modalidad, la categoría y la temporada.
-- **Equipo**: nombre, categoría, modalidad, temporada, duración del partido y competición (el nombre de la liga). La categoría y la modalidad se bloquean si ya hay jugadores o partidos.
+- **Equipo**: nombre, categoría, modalidad, temporada y duración del partido. La categoría y la modalidad se bloquean si ya hay jugadores o partidos.
 - **Colores**: principal y secundario.
 - **Ubicación**: país, localidad y campo.
 - **Miembros**: todos los del equipo con su rol. El botón de invitar aún no funciona.

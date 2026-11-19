@@ -25,6 +25,7 @@ erDiagram
     TRAINING ||--o{ ATTENDANCE : "registra"
     PLAYER ||--o{ ATTENDANCE : "tiene"
     PLAYER ||--o{ PLAYER_NOTE : "tiene"
+    SEASON ||--o{ CALENDAR_NOTE : "incluye"
     TEAM ||--o{ OPPONENT : "tiene"
     SEASON ||--o{ MATCH : "incluye"
     OPPONENT ||--o{ MATCH : "es rival en"
@@ -45,7 +46,7 @@ La persona que inicia sesión.
 | `name` | texto | Obligatorio |
 | `surname` | texto | Obligatorio |
 | `birthDate` | fecha | Obligatoria |
-| `locale` | `es` / `gl` / `en` | Idioma de la interfaz. Por defecto `es` |
+| `locale` | `es` / `gl` | Idioma de la interfaz. Por defecto `es` |
 | `passwordHash` | texto | Hash de la contraseña. **Nunca se devuelve** en las consultas |
 
 Calculado: `age`.
@@ -75,7 +76,7 @@ Una temporada de un equipo. Aquí viven los datos que cambian cada año.
 | --- | --- | --- |
 | `team` | referencia a Team | Obligatorio |
 | `startYear` | número | `2026` significa la temporada 2026/2027 |
-| `category` | lista cerrada | `prebenjamin`, `benjamin`, `alevin`, `infantil`, `cadete`, `juvenil` |
+| `category` | lista cerrada | `prebenjamin`, `benjamin`, `alevin`, `infantil`, `cadete`, `juvenil`, `senior`, `veteranos` |
 | `modality` | `f7` / `f8` / `f11` | Condiciona formaciones y número de titulares |
 | `division` | texto | Libre, porque depende de la federación y del grupo |
 | `matchDuration` | número | Duración total del partido, en minutos |
@@ -190,6 +191,7 @@ Un entreno de una temporada.
 | --- | --- | --- |
 | `team` | referencia a Team | Obligatorio |
 | `season` | referencia a Season | Obligatorio |
+| `type` | lista cerrada | `tactical`, `technical`, `physical` o `mixed` |
 | `date` | fecha | Obligatoria. Se guarda a medianoche UTC, igual que las fechas de nacimiento |
 | `startTime` | texto | Opcional. Formato `HH:MM` |
 | `durationMinutes` | número | Opcional. De 10 a 240 |
@@ -274,9 +276,12 @@ Un partido de la temporada.
 | `status` | lista cerrada | `pending`, `playing` o `finished` |
 | `goalsFor` | número 0-99 | Goles a favor. Solo existe desde que empieza el partido |
 | `goalsAgainst` | número 0-99 | Goles en contra. Igual |
+| `durationMinutes` | número | Duración del partido copiada de la temporada al crearlo, entre 10 y 120 minutos |
+| `goalkeeper` | referencia a Player | Portero titular de ese partido |
+| `formation` | lista cerrada | Formación elegida para la alineación; incluye opciones de fútbol 8 y fútbol clásico |
 | `callup` | lista | Convocados. Cada uno guarda jugador, titularidad y, opcionalmente, el dorsal de ese partido |
-| `lineup` | objeto | Alineación calculada a partir de la convocatoria: titulares, portero, dorsales y problemas de validación |
-| `events` | lista | Eventos del acta: goles, tarjetas y sustituciones, con minuto y jugadores implicados |
+| `lineup` | respuesta calculada | Alineación derivada de la convocatoria: titulares, portero, dorsales y problemas de validación; no se guarda como colección independiente |
+| `events` | lista | Eventos del acta: goles, tarjetas y sustituciones, con minuto, jugadores, asistencias y datos del rival cuando corresponde |
 
 El resultado se guarda **desde nuestra perspectiva**, sea cual sea la sede. De ahí se calcula si fue victoria, empate o derrota. Las pantallas lo muestran en el orden en que se anuncia el partido: en casa y en campo neutral va primero nuestro equipo, y fuera va primero el rival.
 
