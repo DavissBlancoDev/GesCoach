@@ -16,10 +16,17 @@ import {
   pendingTasks,
   sanctionRisk,
   squadCounts,
+  latestTrainingAttendance,
 } from "../lib/dashboard";
 import { LastMatchCard, NextMatchCard } from "../components/MatchCards";
 import WeekCalendar from "../components/WeekCalendar";
-import { PointsBlock, SanctionBlock, SquadBlock, TasksBlock } from "../components/DashboardBlocks";
+import {
+  LastTrainingBlock,
+  PointsBlock,
+  SanctionBlock,
+  SquadBlock,
+  TasksBlock,
+} from "../components/DashboardBlocks";
 
 /**
  * Dashboard del equipo: bienvenida, plantilla y partidos, puntos de liga,
@@ -63,6 +70,7 @@ function DashboardPage() {
 
   const next = nextMatch(matchList);
   const last = finishedNewestFirst(matchList)[0];
+  const lastTrainingAttendance = latestTrainingAttendance(trainingList);
   const yellowLimit = season.yellowCardsLimit ?? DEFAULT_YELLOW_CARDS_LIMIT;
 
   const tasks = pendingTasks({
@@ -74,7 +82,7 @@ function DashboardPage() {
   });
 
   return (
-    <main className="mx-auto max-w-5xl p-4">
+    <main className="mx-auto max-w-7xl p-4">
       <h1 className="text-2xl font-bold">
         Hola, {user?.name} - {team.name}
       </h1>
@@ -86,9 +94,13 @@ function DashboardPage() {
         <p className="mt-3 text-sm text-red-600">No se han podido cargar todos los datos.</p>
       )}
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <SquadBlock counts={squadCounts(playerList)} record={matchRecord(matchList)} />
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <div className="md:col-span-3">
+          <SquadBlock counts={squadCounts(playerList)} record={matchRecord(matchList)} />
+        </div>
         <PointsBlock points={leaguePoints(matchList)} />
+
+        {canSeeStats(role) && <LastTrainingBlock comparison={lastTrainingAttendance} />}
 
         <section>
           <h2 className="mb-2 text-lg font-semibold">Próximo partido</h2>
@@ -121,7 +133,7 @@ function DashboardPage() {
           )}
         </section>
 
-        <div className="md:col-span-2">
+        <div className="md:col-span-3">
           <WeekCalendar
             trainings={trainingList}
             matches={matchList}

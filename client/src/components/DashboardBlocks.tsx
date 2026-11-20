@@ -8,7 +8,9 @@ import type {
   MatchRecord,
   PendingTask,
   SquadCounts,
+  TrainingAttendanceComparison,
 } from "../lib/dashboard";
+import { formatTrainingDate, formatTrainingTime, TRAINING_TYPE_LABELS } from "../lib/trainings";
 import StatusIcon from "./StatusIcon";
 
 /** Plantilla según el estado de los jugadores, y partidos jugados con su récord. */
@@ -47,13 +49,13 @@ export function SquadBlock({
   ];
 
   return (
-    <section className="rounded border border-gray-200 p-4">
-      <h2 className="mb-3 text-lg font-semibold">Plantilla</h2>
+    <section className="rounded border border-gray-200 p-3">
+      <h2 className="mb-2 text-lg font-semibold">Plantilla</h2>
       <div className="grid grid-cols-4 gap-2 text-center">
         {tiles.map((tile) => (
-          <div key={tile.label} className="rounded bg-gray-50 p-2">
+          <div key={tile.label} className="rounded bg-gray-50 p-1.5">
             <p
-              className={`text-2xl font-bold tabular-nums ${tile.value > 0 ? tile.alert : ""}`}
+              className={`text-xl font-bold tabular-nums ${tile.value > 0 ? tile.alert : ""}`}
             >
               {tile.value}
             </p>
@@ -63,9 +65,9 @@ export function SquadBlock({
           </div>
         ))}
       </div>
-      <p className="mt-2 text-xs text-gray-500">{counts.total} en plantilla</p>
+      <p className="mt-1 text-xs text-gray-500">{counts.total} en plantilla</p>
 
-      <p className="mt-4 border-t border-gray-100 pt-3">
+      <p className="mt-2 border-t border-gray-100 pt-2">
         <span className="text-lg font-semibold">Partidos: </span>{" "}
         <span className="text-2xl font-bold tabular-nums">{record.played}</span>{" "}
         <span className="text-sm text-gray-500">
@@ -106,6 +108,52 @@ export function PointsBlock({ points }: { points: LeaguePoints }) {
             {points.played === 1 ? "partido de liga" : "partidos de liga"}.
             Cuentan 3 puntos por victoria y 1 por empate.
           </p>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** Asistencia del último entreno celebrado frente al acumulado de la temporada. */
+export function LastTrainingBlock({
+  comparison,
+}: {
+  comparison: TrainingAttendanceComparison | null;
+}) {
+  return (
+    <section className="rounded border border-gray-200 p-4">
+      <h2 className="mb-3 text-lg font-semibold">Asistencia a entrenos</h2>
+      {!comparison ? (
+        <p className="text-sm text-gray-600">Aún no hay entrenamientos celebrados con asistencia registrada.</p>
+      ) : (
+        <>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Última sesión</p>
+          <p className="font-medium">{formatTrainingDate(comparison.training.date)}</p>
+          <p className="text-sm text-gray-600">
+            {[TRAINING_TYPE_LABELS[comparison.training.type], formatTrainingTime(comparison.training)]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-center">
+            <div className="rounded bg-green-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">Este entreno</p>
+              <p className="mt-1 text-3xl font-bold tabular-nums text-green-800">
+                {comparison.trainingPercentage}%
+              </p>
+              <p className="text-xs text-gray-600">
+                {comparison.trainingPresent} de {comparison.trainingRecorded} presentes
+              </p>
+            </div>
+            <div className="rounded bg-gray-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">Temporada</p>
+              <p className="mt-1 text-3xl font-bold tabular-nums text-gray-800">
+                {comparison.seasonPercentage}%
+              </p>
+              <p className="text-xs text-gray-600">
+                {comparison.seasonPresent} de {comparison.seasonRecorded} presentes
+              </p>
+            </div>
+          </div>
         </>
       )}
     </section>

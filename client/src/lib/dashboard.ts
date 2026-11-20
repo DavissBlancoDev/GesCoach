@@ -40,6 +40,52 @@ export interface PendingTask {
   href: string;
 }
 
+export interface TrainingAttendanceComparison {
+  training: Training;
+  trainingPresent: number;
+  trainingRecorded: number;
+  trainingPercentage: number;
+  seasonPresent: number;
+  seasonRecorded: number;
+  seasonPercentage: number;
+}
+
+/** Último entreno celebrado y su porcentaje frente al acumulado de la temporada. */
+export function latestTrainingAttendance(
+  trainings: Training[],
+): TrainingAttendanceComparison | null {
+  const held = trainings.filter((training) => training.status === "held" && training.attendance);
+  if (held.length === 0) return null;
+
+  const latest = held[held.length - 1];
+  const latestAttendance = latest.attendance!;
+  const seasonTotals = held.reduce(
+    (totals, training) => {
+      const attendance = training.attendance!;
+      totals.present += attendance.present;
+      totals.recorded +=
+        attendance.present + attendance.justifiedAbsence + attendance.unjustifiedAbsence;
+      return totals;
+    },
+    { present: 0, recorded: 0 },
+  );
+  const latestRecorded =
+    latestAttendance.present +
+    latestAttendance.justifiedAbsence +
+    latestAttendance.unjustifiedAbsence;
+
+  return {
+    training: latest,
+    trainingPresent: latestAttendance.present,
+    trainingRecorded: latestRecorded,
+    trainingPercentage: latestRecorded > 0 ? Math.round((latestAttendance.present / latestRecorded) * 100) : 0,
+    seasonPresent: seasonTotals.present,
+    seasonRecorded: seasonTotals.recorded,
+    seasonPercentage:
+      seasonTotals.recorded > 0 ? Math.round((seasonTotals.present / seasonTotals.recorded) * 100) : 0,
+  };
+}
+
 /** Jugadores de la plantilla según su estado. */
 export function squadCounts(players: SquadPlayer[]): SquadCounts {
   const count = (status: PlayerStatus) => players.filter((p) => p.status === status).length;
