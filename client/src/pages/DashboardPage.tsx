@@ -96,13 +96,14 @@ function DashboardPage() {
 
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         <div className="md:col-span-3">
-          <SquadBlock counts={squadCounts(playerList)} record={matchRecord(matchList)} />
+          <SquadBlock counts={squadCounts(playerList)} />
         </div>
-        <PointsBlock points={leaguePoints(matchList)} />
+        <PointsBlock points={leaguePoints(matchList)} record={matchRecord(matchList)} />
 
         {canSeeStats(role) && <LastTrainingBlock comparison={lastTrainingAttendance} />}
 
-        <section>
+        <div className="space-y-4">
+          <section>
           <h2 className="mb-2 text-lg font-semibold">Próximo partido</h2>
           {next ? (
             <NextMatchCard match={next} teamName={team.name} division={season.division} />
@@ -131,7 +132,8 @@ function DashboardPage() {
               Aún no has jugado ningún partido esta temporada.
             </p>
           )}
-        </section>
+          </section>
+        </div>
 
         <div className="md:col-span-3">
           <WeekCalendar

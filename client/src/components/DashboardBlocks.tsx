@@ -16,10 +16,8 @@ import StatusIcon from "./StatusIcon";
 /** Plantilla según el estado de los jugadores, y partidos jugados con su récord. */
 export function SquadBlock({
   counts,
-  record,
 }: {
   counts: SquadCounts;
-  record: MatchRecord;
 }) {
   const tiles = [
     {
@@ -50,7 +48,9 @@ export function SquadBlock({
 
   return (
     <section className="rounded border border-gray-200 p-3">
-      <h2 className="mb-2 text-lg font-semibold">Plantilla</h2>
+      <h2 className="mb-2 text-lg font-semibold">
+        Plantilla <span className="text-sm font-normal text-gray-500">{counts.total} en plantilla</span>
+      </h2>
       <div className="grid grid-cols-4 gap-2 text-center">
         {tiles.map((tile) => (
           <div key={tile.label} className="rounded bg-gray-50 p-1.5">
@@ -65,21 +65,12 @@ export function SquadBlock({
           </div>
         ))}
       </div>
-      <p className="mt-1 text-xs text-gray-500">{counts.total} en plantilla</p>
-
-      <p className="mt-2 border-t border-gray-100 pt-2">
-        <span className="text-lg font-semibold">Partidos: </span>{" "}
-        <span className="text-2xl font-bold tabular-nums">{record.played}</span>{" "}
-        <span className="text-sm text-gray-500">
-          {record.wins} V - {record.draws} E - {record.losses} D
-        </span>
-      </p>
     </section>
   );
 }
 
 /** Puntos de liga obtenidos sobre el máximo posible. */
-export function PointsBlock({ points }: { points: LeaguePoints }) {
+export function PointsBlock({ points, record }: { points: LeaguePoints; record: MatchRecord }) {
   return (
     <section className="rounded border border-gray-200 p-4">
       <h2 className="mb-3 text-lg font-semibold">Puntos de liga</h2>
@@ -108,6 +99,49 @@ export function PointsBlock({ points }: { points: LeaguePoints }) {
             {points.played === 1 ? "partido de liga" : "partidos de liga"}.
             Cuentan 3 puntos por victoria y 1 por empate.
           </p>
+        </>
+      )}
+      <p className="mt-3 border-t border-gray-100 pt-3">
+        <span className="text-lg font-semibold">Partidos: </span>{" "}
+        <span className="text-2xl font-bold tabular-nums">{record.played}</span>{" "}
+      </p>
+      {record.played > 0 && (
+        <>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-lg bg-green-50 p-2">
+              <p className="text-xl font-bold text-green-800">{record.wins}</p>
+              <p className="text-xs text-gray-600">V</p>
+            </div>
+            <div className="rounded-lg bg-amber-50 p-2">
+              <p className="text-xl font-bold text-amber-800">{record.draws}</p>
+              <p className="text-xs text-gray-600">E</p>
+            </div>
+            <div className="rounded-lg bg-red-50 p-2">
+              <p className="text-xl font-bold text-red-800">{record.losses}</p>
+              <p className="text-xs text-gray-600">D</p>
+            </div>
+          </div>
+          <div
+            role="img"
+            aria-label={`${record.wins} victorias, ${record.draws} empates y ${record.losses} derrotas`}
+            className="mt-3 flex h-2 overflow-hidden rounded-full bg-gray-100"
+          >
+            <span
+              className="bg-green-500"
+              style={{ flexGrow: record.wins, flexBasis: 0 }}
+              title="Victorias"
+            />
+            <span
+              className="bg-amber-400"
+              style={{ flexGrow: record.draws, flexBasis: 0 }}
+              title="Empates"
+            />
+            <span
+              className="bg-red-500"
+              style={{ flexGrow: record.losses, flexBasis: 0 }}
+              title="Derrotas"
+            />
+          </div>
         </>
       )}
     </section>
