@@ -25,6 +25,8 @@ interface MatchFormProps {
   // Si se indica, el formulario edita ese partido; si no, programa uno nuevo
   match?: Match;
   onDone: () => void;
+  // Permite usar el formulario dentro de un Modal sin repetir el título
+  showTitle?: boolean;
 }
 
 const currentYear = new Date().getFullYear();
@@ -34,7 +36,14 @@ const currentYear = new Date().getFullYear();
  * partido, rival (con sugerencias de los ya usados), sede, fecha, hora
  * opcional, localidad, campo y observaciones.
  */
-function MatchForm({ teamId, division, defaultFieldName, match, onDone }: MatchFormProps) {
+function MatchForm({
+  teamId,
+  division,
+  defaultFieldName,
+  match,
+  onDone,
+  showTitle = true,
+}: MatchFormProps) {
   const isEditing = Boolean(match);
   const { data: opponents } = useOpponents(teamId);
   const { current } = useCurrentTeam();
@@ -110,7 +119,9 @@ function MatchForm({ teamId, division, defaultFieldName, match, onDone }: MatchF
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded border border-gray-200 p-4">
-      <h2 className="text-lg font-semibold">{isEditing ? "Editar partido" : "Programar partido"}</h2>
+      {showTitle && (
+        <h2 className="text-lg font-semibold">{isEditing ? "Editar partido" : "Programar partido"}</h2>
+      )}
 
       <FormSelect
         id="competition"

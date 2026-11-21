@@ -22,6 +22,7 @@ import {
   VenueIcon,
 } from "../components/MatchCards";
 import MatchForm from "../components/MatchForm";
+import Modal from "../components/Modal";
 import { leaguePoints, matchRecord } from "../lib/dashboard";
 
 type MatchTab = "all" | "upcoming" | "played" | "home" | "away";
@@ -310,14 +311,15 @@ function MatchesPage() {
       </div>
 
       {showForm && (
-        <div className="mb-6">
+        <Modal title="Programar partido" onClose={() => setShowForm(false)} className="max-w-2xl">
           <MatchForm
             teamId={team._id}
             division={current.currentSeason.division}
             defaultFieldName={team.fieldName}
             onDone={() => setShowForm(false)}
+            showTitle={false}
           />
-        </div>
+        </Modal>
       )}
 
       {isPending && <p>Cargando partidos...</p>}
